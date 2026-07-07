@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Visitas de Lojas</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --navy: #0d2d4f;
+      --green: #3cb87a;
+      --green-light: #6dd49e;
+      --green-soft: rgba(60,184,122,0.13);
+      --green-pale: #e8f7ef;
+      --border: #c8e6d8;
+      --surface: #fff;
+      --surface2: #f0f7f4;
+      --text: #0d2d4f;
+      --dim: #6b8fa8;
+      --orange: #f59e0b;
+      --red: #e53e3e;
+      --radius: 12px;
+      --shadow: 0 2px 12px rgba(13,45,79,0.08);
+      --shadow-md: 0 4px 20px rgba(13,45,79,0.13);
+      --font: 'Poppins', system-ui, sans-serif;
+    }
+    body { font-family: var(--font); background: #f5fbf8; color: var(--text); min-height: 100vh; }
+
+    /* NAV */
+    nav {
+      background: var(--navy); height: 58px; padding: 0 16px;
+      display: flex; align-items: center; gap: 4px;
+      position: sticky; top: 0; z-index: 100;
+      box-shadow: 0 2px 12px rgba(13,45,79,0.2);
+    }
+    .logo { font-weight: 700; font-size: 0.95rem; color: var(--green-light); margin-right: auto; white-space: nowrap; }
+    .logo em { color: #fff; font-style: normal; font-weight: 400; }
+    nav button {
+      background: none; border: none; color: rgba(255,255,255,0.6);
+      font-family: var(--font); font-size: 1rem; font-weight: 500; display:flex; align-items:center; justify-content:center;
+      padding: 6px 11px; border-radius: 8px; cursor: pointer;
+      transition: all .15s; white-space: nowrap; flex-shrink: 0;
+    }
+    nav button:hover { background: rgba(255,255,255,0.1); color: #fff; }
+    nav button.active { background: var(--green); color: #fff; }
+
+    /* GPS STATUS BAR */
+    #gpsBar {
+      background: var(--navy); color: rgba(255,255,255,0.7);
+      font-size: 0.72rem; text-align: center; padding: 5px 12px;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    #gpsDot { width: 8px; height: 8px; border-radius: 50%; background: #666; flex-shrink: 0; }
+    #gpsDot.ok  { background: var(--green); box-shadow: 0 0 6px var(--green); animation: pulse 2s infinite; }
+    #gpsDot.err { background: var(--red); }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+    /* PAGES */
+    .page { display: none; padding: 16px; max-width: 700px; margin: 0 auto; }
+    .page.active { display: block; }
+
+    /* STATS */
+    .stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 18px; }
+    .stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 10px; text-align: center; box-shadow: var(--shadow); }
+    .stat.blue  { border-top: 3px solid var(--navy); }
+    .stat.green { border-top: 3px solid var(--green); }
+    .stat.ora   { border-top: 3px solid var(--orange); }
+    .stat .num  { font-size: 1.8rem; font-weight: 700; line-height: 1; }
+    .stat.blue  .num { color: var(--navy); }
+    .stat.green .num { color: var(--green); }
+    .stat.ora   .num { color: var(--orange); }
+    .stat .lbl  { font-size: 0.65rem; color: var(--dim); margin-top: 4px; text-transform: uppercase; letter-spacing: .06em; font-weight: 500; }
+
+    /* SEARCH */
+    .search-bar {
+      width: 100%; background: var(--surface); border: 1.5px solid var(--border);
+      border-radius: var(--radius); padding: 10px 14px; color: var(--text);
+      font-family: var(--font); font-size: 0.88rem; margin-bottom: 12px; box-shadow: var(--shadow);
+    }
+    .search-bar::placeholder { color: var(--dim); }
+    .search-bar:focus { outline: none; border-color: var(--green); box-shadow: 0 0 0 3px var(--green-soft); }
+
+    /* LISTA DE LOJAS */
+    .loja-grid {
+      display: flex; flex-direction: column; gap: 0;
+      border: 1.5px solid var(--border); border-radius: 12px;
+      overflow: hidden; background: var(--surface);
+    }
+
+    /* Cabeçalho da lista */
+    .loja-list-header {
+      display: grid; grid-template-columns: 1fr 130px 48px;
+      padding: 8px 12px; background: var(--surface2);
+      font-size: 0.65rem; font-weight: 700; color: var(--navy);
+      text-transform: uppercase; letter-spacing: .06em;
+      border-bottom: 1.5px solid var(--border);
+    }
+
+    /* LINHA DE LOJA */
+    .loja-item {
+      display: grid; grid-template-columns: 1fr 130px 48px;
+      align-items: center; gap: 6px;
+      padding: 9px 12px;
+      border-bottom: 1px solid var(--border);
+      transition: background .15s;
+      cursor: default; position: relative;
+    }
+    .loja-item:last-child { border-bottom: none; }
+    .loja-item:hover { background: var(--surface2); }
+
+    /* Visitada recentemente — fundo verde */
+    .loja-item.visitada-recente {
+      background: #89df75 !important;
+    }
+    .loja-item.visitada-recente:hover { background: #7dd468 !important; }
+
+    /* Nome da loja truncado em 1 linha */
+    .loja-nome {
+      font-weight: 600; font-size: 0.78rem;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      color: var(--navy);
+    }
+
+    /* Visitada recente: borda grossa verde */
+    .loja-item.visitada-recente {
+      border-color: var(--green) !important;
+      border-width: 3px !important;
+    }
+
+
+    /* Label de potencial com cor por faixa */
+    .pot-label {
+      font-size: 0.62rem; font-weight: 700;
+      padding: 3px 8px; border-radius: 20px;
+      letter-spacing: .02em; text-align: center;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      display: inline-block; max-width: 128px;
+    }
+    .pot-label.pot-A { background: #FFD700; color: #000; }
+    .pot-label.pot-B { background: #FFA500; color: #000; }
+    .pot-label.pot-C { background: #009c3b; color: #fff; }
+    .pot-label.pot-D { background: #1a56db; color: #fff; }
+    .pot-label.pot-E { background: #7e3af2; color: #fff; }
+    .pot-label.pot-F { background: #111827; color: #fff; }
+    .pot-label.pot-x { background: #e9ecef; color: #6c757d; }
+
+    /* Contador de visitas */
+    .visit-count {
+      font-size: 0.78rem; color: #000; font-weight: 700;
+      text-align: right;
+    }
+
+    /* Hora da última visita */
+    .hora-ok { font-size: 0.58rem; color: var(--green); font-weight: 600; }
+
+    /* sem GPS badge */
+    .sem-gps-badge { font-size: 0.55rem; color: var(--orange); font-weight: 600; }
+
+    .loja-dist { display: none; } /* não mostrar distância nos cards */
+
+    /* NOTIFICAÇÃO FLUTUANTE */
+    #notif {
+      position: fixed; top: 70px; left: 50%; transform: translateX(-50%);
+      background: var(--navy); color: #fff;
+      padding: 14px 20px; border-radius: 14px;
+      font-size: 0.88rem; font-weight: 600; z-index: 9999;
+      box-shadow: 0 8px 32px rgba(13,45,79,0.35);
+      display: none; max-width: 90vw; text-align: center;
+      border-left: 5px solid var(--green);
+    }
+    #notif.show { display: block; animation: dropIn .3s ease; }
+    @keyframes dropIn { from{transform:translateX(-50%) translateY(-20px);opacity:0} to{transform:translateX(-50%) translateY(0);opacity:1} }
+
+    /* CARD */
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; margin-bottom: 12px; box-shadow: var(--shadow); }
+    .card h3 { font-size: 0.92rem; margin-bottom: 14px; color: var(--navy); }
+
+    /* UPLOAD */
+    .upload-area {
+      border: 2px dashed var(--border); border-radius: var(--radius);
+      padding: 36px 20px; text-align: center; cursor: pointer;
+      transition: all .2s; background: var(--surface2); margin-bottom: 14px;
+    }
+    .upload-area:hover, .upload-area.drag { border-color: var(--green); background: var(--green-pale); }
+    .upload-area .icon { font-size: 2.2rem; margin-bottom: 8px; }
+    .upload-area strong { color: var(--navy); display: block; margin-bottom: 4px; }
+    .upload-area p { color: var(--dim); font-size: 0.8rem; }
+
+    /* BTNS */
+    .btn {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 8px 16px; border-radius: 8px; font-size: 0.82rem;
+      font-weight: 600; border: none; cursor: pointer; transition: all .15s; font-family: var(--font);
+    }
+    .btn:hover { opacity: .88; transform: translateY(-1px); }
+    .btn-primary { background: var(--green); color: #fff; }
+    .btn-danger  { background: var(--red); color: #fff; }
+    .btn-outline { background: none; border: 1.5px solid var(--border); color: var(--navy); }
+
+    /* PROGRESS GEOCODE */
+    #geoProgress {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 14px; margin-top: 10px; display: none;
+    }
+    .prog-bar-wrap { background: #e0ede8; border-radius: 20px; height: 8px; margin: 8px 0; overflow: hidden; }
+    .prog-bar      { background: var(--green); height: 100%; border-radius: 20px; transition: width .3s; }
+    #geoStatus { font-size: 0.78rem; color: var(--dim); }
+
+    /* TABLE */
+    .table-wrap { overflow-x: auto; border-radius: 8px; border: 1px solid var(--border); }
+    table { width: 100%; border-collapse: collapse; font-size: 0.79rem; }
+    th { background: var(--surface2); padding: 9px 12px; text-align: left; color: var(--navy); font-weight: 600; text-transform: uppercase; font-size: 0.64rem; letter-spacing: .06em; }
+    td { padding: 8px 12px; border-top: 1px solid #edf5f1; }
+    tr:hover td { background: var(--green-pale); }
+
+    /* INPUTS */
+    input[type=date] { background: var(--surface2); border: 1.5px solid var(--border); border-radius: 8px; padding: 8px 12px; color: var(--text); font-family: var(--font); font-size: 0.85rem; flex: 1; }
+    input:focus { outline: none; border-color: var(--green); }
+
+    /* TOAST */
+    #toast {
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+      background: var(--navy); color: #fff; padding: 10px 20px;
+      border-radius: 10px; font-size: 0.82rem; font-weight: 500;
+      z-index: 9998; display: none; box-shadow: 0 6px 24px rgba(13,45,79,0.25);
+      font-family: var(--font); white-space: nowrap;
+    }
+    #toast.show { display: block; animation: up .2s ease; }
+    #toast.ok  { background: var(--green); }
+    #toast.err { background: var(--red); }
+    @keyframes up { from{transform:translateX(-50%) translateY(8px);opacity:0} to{transform:translateX(-50%) translateY(0);opacity:1} }
+
+    .msg { text-align: center; padding: 36px 20px; color: var(--dim); font-size: 0.85rem; }
+    .msg.err { color: var(--red); }
+
+    /* CONFIG GPS */
+    .gps-config { display: flex; align-items: center; gap: 10px; background: var(--surface2); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 14px; font-size: 0.82rem; }
+    .gps-config label { color: var(--dim); margin: 0; font-weight: 400; }
+    .gps-config strong { color: var(--navy); }
+    .toggle { position: relative; width: 42px; height: 24px; flex-shrink: 0; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; inset: 0; background: #cdd8e0; border-radius: 24px; cursor: pointer; transition: .3s; }
+    .slider:before { content:''; position:absolute; width:18px; height:18px; left:3px; top:3px; background:#fff; border-radius:50%; transition:.3s; }
+    input:checked + .slider { background: var(--green); }
+    input:checked + .slider:before { transform: translateX(18px); }
+
+    @media (max-width: 480px) {
+      .stat .num { font-size: 1.4rem; }
+      nav button span { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <span class="logo">📍 Visitas <em>de Lojas</em></span>
+  <button onclick="showPage('rotas')" id="nav-rotas" class="active" title="Rotas">
+    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
+    </svg>
+  </button>
+  <button onclick="showPage('historico')" id="nav-historico" title="Histórico">
+    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
+    </svg>
+  </button>
+  <button onclick="showPage('painel')" id="nav-painel" title="Painel">
+    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.7"/>
+    </svg>
+  </button>
+</nav>
+
+<!-- BARRA GPS -->
+<div id="gpsBar">
+  <div id="gpsDot"></div>
+  <span id="gpsTxt">GPS desligado — ative o rastreamento</span>
+</div>
+
+<!-- NOTIFICAÇÃO FLUTUANTE -->
+<div id="notif"></div>
+
+<!-- ROTAS -->
+<div class="page active" id="page-rotas">
+
+  <div class="gps-config">
+    <label class="toggle">
+      <input type="checkbox" id="toggleGPS" onchange="toggleRastreamento(this.checked)">
+      <span class="slider"></span>
+    </label>
+    <div>
+      <strong>Rastreamento automático</strong>
+
+    </div>
+  </div>
+
+  <input class="search-bar" type="text" placeholder="🔍 Buscar loja..." oninput="filtrar()" id="busca" />
+  <div class="loja-grid" id="lista"><div class="msg" >Conectando...</div></div>
+</div>
+
+<!-- HISTÓRICO -->
+<div class="page" id="page-historico">
+  <div class="card">
+    <div style="display:flex;gap:10px;align-items:center">
+      <input type="date" id="dtHistorico" />
+      <button class="btn btn-outline" onclick="carregarHistorico()">Buscar</button>
+    </div>
+  </div>
+  <div id="tblHistorico"><div class="msg">Selecione uma data acima</div></div>
+</div>
+
+<!-- PAINEL -->
+<div class="page" id="page-painel">
+  <div class="card">
+    <h3>📤 Importar lista de lojas</h3>
+    <div class="upload-area" id="dropZone" onclick="document.getElementById('fileIn').click()"
+      ondrop="onDrop(event)" ondragover="onDragOver(event)" ondragleave="onDragLeave()">
+      <div class="icon">📂</div>
+      <strong>Clique ou arraste o arquivo aqui</strong>
+      <p>Aceita .xlsx, .xls e .csv · Geocodificação automática via Google Maps</p>
+    </div>
+    <input type="file" id="fileIn" accept=".xlsx,.xls,.csv" style="display:none" onchange="onFile(event)" />
+
+    <!-- Barra de progresso geocode -->
+    <div id="geoProgress">
+      <div id="geoStatus">Geocodificando endereços...</div>
+      <div class="prog-bar-wrap"><div class="prog-bar" id="progBar" style="width:0%"></div></div>
+      <div id="geoDetalhe" style="font-size:0.72rem;color:var(--dim)"></div>
+    </div>
+
+    <div id="preview"></div>
+  </div>
+
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <h3 style="margin:0">🏪 Lojas cadastradas</h3>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-outline" onclick="geocodificarPendentes()" title="Geocodificar lojas sem coordenadas">📡 Geocodificar</button>
+        <button class="btn btn-outline" onclick="exportar()">⬇ Exportar</button>
+        <button class="btn btn-danger"  onclick="resetVisitas()" title="Apagar visitas de hoje">🔄 Reset Visitas</button>
+        <button class="btn btn-danger"  onclick="limpar()">🗑 Limpar Tudo</button>
+      </div>
+    </div>
+    <div id="tblLojas"><div class="msg">Carregando...</div></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════
+//  CONFIG
+// ══════════════════════════════════════════
+const SB_URL   = 'https://giocnzylrabbiehfigdg.supabase.co';
+const SB_KEY   = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdpb2NuenlscmFiYmllaGZpZ2RnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI2ODc0NTQsImV4cCI6MjA5ODI2MzQ1NH0.j5ZpMgRcYXbTwdMPOfa9cGI47ymENX3qXwN_vbHAIdE';
+const RAIO_M       = 25;      // metros para marcar automaticamente (era 50)
+const COOLDOWN     = 300000;  // 5 min entre marcações da mesma loja
+const ACCURACY_MAX = 25;      // só marca automaticamente se a precisão do GPS for <= 25m
+
+// ══════════════════════════════════════════
+//  ESTADO
+// ══════════════════════════════════════════
+let sb, lojas = [], zonaAtiva = 'Todas';
+let watchId = null, posAtual = null;
+const marcadas = new Set(); // IDs já marcados nesta sessão (evita duplo)
+const ultimaMarcacao = {};  // loja_id → timestamp
+
+// ══════════════════════════════════════════
+//  UTILITÁRIOS
+// ══════════════════════════════════════════
+function toast(msg, tipo='') {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.className = 'show ' + tipo;
+  setTimeout(() => el.className = '', 3200);
+}
+
+function notificar(nome, distancia) {
+  const el = document.getElementById('notif');
+  el.innerHTML = `✅ <strong>${nome}</strong><br><small>Visita registrada automaticamente · ${Math.round(distancia)}m</small>`;
+  el.className = 'show';
+  setTimeout(() => el.className = '', 4000);
+
+  // Som de notificação (beep via AudioContext)
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    [0, 150].forEach(delay => {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.frequency.value = 880;
+      g.gain.setValueAtTime(0.3, ctx.currentTime + delay/1000);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay/1000 + 0.3);
+      o.start(ctx.currentTime + delay/1000);
+      o.stop(ctx.currentTime + delay/1000 + 0.3);
+    });
+  } catch(e) {}
+
+  // Notificação nativa do browser se permitida
+  if (Notification.permission === 'granted') {
+    new Notification('📍 Visita registrada!', { body: nome, icon: '' });
+  }
+}
+
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.getElementById('nav-' + name).classList.add('active');
+  if (name === 'historico') { document.getElementById('dtHistorico').value = hoje(); carregarHistorico(); }
+  if (name === 'painel')    carregarTabelaLojas();
+}
+
+function hoje() { return new Date().toISOString().split('T')[0]; }
+
+// ══════════════════════════════════════════
+//  DISTÂNCIA (Haversine)
+// ══════════════════════════════════════════
+function distancia(lat1, lon1, lat2, lon2) {
+  const R = 6371000;
+  const dLat = (lat2-lat1) * Math.PI/180;
+  const dLon = (lon2-lon1) * Math.PI/180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+// ══════════════════════════════════════════
+//  RASTREAMENTO GPS
+// ══════════════════════════════════════════
+function toggleRastreamento(ativo) {
+  if (ativo) iniciarGPS();
+  else pararGPS();
+}
+
+function iniciarGPS() {
+  if (!navigator.geolocation) {
+    toast('Geolocalização não suportada', 'err');
+    document.getElementById('toggleGPS').checked = false;
+    return;
+  }
+
+  // Pede permissão de notificação
+  if (Notification.permission === 'default') Notification.requestPermission();
+
+  setGpsStatus('buscando', '📡 Buscando sinal GPS...');
+
+  watchId = navigator.geolocation.watchPosition(
+    pos => onPosicao(pos),
+    err => {
+      setGpsStatus('err', '❌ Erro de GPS — verifique permissões');
+      console.error('GPS erro:', err);
+    },
+    { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
+  );
+}
+
+function pararGPS() {
+  if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+  posAtual = null;
+  setGpsStatus('off', 'GPS desligado — ative o rastreamento');
+
+}
+
+function setGpsStatus(estado, txt) {
+  const dot = document.getElementById('gpsDot');
+  const label = document.getElementById('gpsTxt');
+  dot.className = estado === 'ok' ? 'ok' : estado === 'err' ? 'err' : '';
+  label.textContent = txt;
+}
+
+async function onPosicao(pos) {
+  posAtual = pos.coords;
+  const { latitude, longitude, accuracy } = pos.coords;
+
+  const precisaoBoa = accuracy <= ACCURACY_MAX;
+  setGpsStatus(
+    'ok',
+    precisaoBoa
+      ? `📡 GPS ativo · precisão ${Math.round(accuracy)}m`
+      : `📡 GPS impreciso (±${Math.round(accuracy)}m) · aguardando sinal melhor`
+  );
+
+  // Verifica cada loja com coordenadas
+  for (const loja of lojas) {
+    if (loja.visitada_hoje) continue;
+    if (!loja.latitude || !loja.longitude) continue;
+
+    const dist = distancia(latitude, longitude, loja.latitude, loja.longitude);
+
+    // Marca automaticamente só se: dentro do raio E o GPS estiver com boa precisão
+    if (dist <= RAIO_M && precisaoBoa) {
+      const agora = Date.now();
+      if (marcadas.has(loja.id)) continue;
+      if (ultimaMarcacao[loja.id] && agora - ultimaMarcacao[loja.id] < COOLDOWN) continue;
+
+      marcadas.add(loja.id);
+      ultimaMarcacao[loja.id] = agora;
+      await registrarVisita(loja, latitude, longitude, dist, true);
+    }
+  }
+}
+
+// ══════════════════════════════════════════
+//  REGISTRAR VISITA (auto ou manual)
+// ══════════════════════════════════════════
+async function registrarVisita(loja, lat, lon, dist, automatica = false) {
+  const { error } = await sb.from('visitas').insert({
+    loja_id: loja.id,
+    latitude_visita: lat,
+    longitude_visita: lon,
+    distancia_metros: Math.round(dist),
+    observacao: automatica ? 'automática' : 'manual'
+  });
+
+  if (error) { toast('Erro ao salvar: ' + error.message, 'err'); marcadas.delete(loja.id); return; }
+
+  loja.visitada_hoje = true;
+  loja.ultima_visita = new Date().toISOString();
+
+  // Atualiza dados em memória
+  loja.total_visitas = (loja.total_visitas || 0) + 1;
+
+  // Re-renderiza o card via renderLista para refletir novo estado
+  renderLista();
+  renderStats();
+
+
+  if (automatica) notificar(loja.nome_loja, dist);
+  else toast('Visita registrada! 📍', 'ok');
+}
+
+// Botão manual
+async function marcar(id, btn) {
+  btn.disabled = true; btn.textContent = '📡...';
+  if (posAtual) {
+    const loja = lojas.find(l => l.id === id);
+    if (loja) {
+      const dist = (loja.latitude && loja.longitude)
+        ? distancia(posAtual.latitude, posAtual.longitude, loja.latitude, loja.longitude)
+        : 0;
+      await registrarVisita(loja, posAtual.latitude, posAtual.longitude, dist, false);
+      return;
+    }
+  }
+  navigator.geolocation.getCurrentPosition(async pos => {
+    const loja = lojas.find(l => l.id === id);
+    if (!loja) return;
+    const dist = (loja.latitude && loja.longitude)
+      ? distancia(pos.coords.latitude, pos.coords.longitude, loja.latitude, loja.longitude)
+      : 0;
+    await registrarVisita(loja, pos.coords.latitude, pos.coords.longitude, dist, false);
+  }, () => {
+    btn.disabled = false; btn.textContent = '📍 Marcar';
+    toast('Ative a localização do celular', 'err');
+  }, { enableHighAccuracy: true, timeout: 10000 });
+}
+
+// ══════════════════════════════════════════
+//  CARREGAR LOJAS
+// ══════════════════════════════════════════
+async function init() {
+  try { sb = window.supabase.createClient(SB_URL, SB_KEY); } catch(e) {
+    document.getElementById('lista').innerHTML = `<div class="msg err">❌ ${e.message}</div>`; return;
+  }
+  const { error } = await sb.from('lojas').select('id').limit(1);
+  if (error) {
+    document.getElementById('lista').innerHTML = `<div class="msg err">❌ Tabelas não encontradas. Execute o SQL no Supabase.<br><small>${error.message}</small></div>`;
+    return;
+  }
+  await carregarLojas();
+  document.getElementById('dtHistorico').value = hoje();
+  setInterval(carregarLojas, 60000);
+}
+
+async function carregarLojas() {
+  // Busca lojas
+  const { data: ls, error: e2 } = await sb.from('lojas').select('*').eq('ativa', true).order('nome_loja');
+  if (e2) { document.getElementById('lista').innerHTML = `<div class="msg err" >❌ ${e2.message}</div>`; return; }
+
+  // Visitas de hoje
+  const d = hoje();
+  const { data: vsHoje } = await sb.from('visitas').select('loja_id, visitada_em')
+    .gte('visitada_em', d+'T00:00:00').lte('visitada_em', d+'T23:59:59');
+
+  // Total de visitas por loja (all time)
+  const { data: vsTotais } = await sb.from('visitas').select('loja_id');
+
+  // Ultima visita por loja (all time)
+  const { data: vsUltima } = await sb.from('visitas').select('loja_id, visitada_em').order('visitada_em', { ascending: false });
+
+  const vmHoje = {};
+  (vsHoje||[]).forEach(v => { if (!vmHoje[v.loja_id] || v.visitada_em > vmHoje[v.loja_id]) vmHoje[v.loja_id] = v.visitada_em; });
+
+  const vmTotal = {};
+  (vsTotais||[]).forEach(v => { vmTotal[v.loja_id] = (vmTotal[v.loja_id]||0) + 1; });
+
+  const vmUltima = {};
+  (vsUltima||[]).forEach(v => { if (!vmUltima[v.loja_id]) vmUltima[v.loja_id] = v.visitada_em; });
+
+  lojas = (ls||[]).map(l => ({
+    ...l,
+    visitada_hoje: !!vmHoje[l.id],
+    ultima_visita: vmUltima[l.id] || null,
+    total_visitas: vmTotal[l.id] || 0,
+  }));
+
+  renderLista();
+}
+
+function renderStats() { /* stats removidos */ }
+
+function filtrar() { renderLista(); }
+
+// Lógica de "visitada recente": true se visitada nos últimos N dias
+// Para potencial C/D/E/F → 3 dias. Para A/B → sem limite (sempre verde até reset)
+function visitadaRecente(loja) {
+  if (!loja.ultima_visita) return false;
+  const pot = (loja.potencial || '').toUpperCase().trim();
+  const alta = ['C','D','E','F'].includes(pot);
+  const limite = alta ? 3 : 9999; // A e B ficam verdes sem prazo
+  const dias = (Date.now() - new Date(loja.ultima_visita).getTime()) / 86400000;
+  return dias <= limite;
+}
+
+function renderLista() {
+  const q  = document.getElementById('busca').value.toLowerCase();
+  const fl = lojas.filter(l =>
+    !q || (l.nome_loja||'').toLowerCase().includes(q) || (l.bairro||'').toLowerCase().includes(q)
+  );
+
+  if (!fl.length) {
+    document.getElementById('lista').innerHTML = '<div class="msg">Nenhuma loja encontrada</div>';
+    return;
+  }
+
+  const header = `<div class="loja-list-header"><span>LOJA</span><span>POTENCIAL</span><span style="text-align:center">VIS.</span></div>`;
+
+  document.getElementById('lista').innerHTML = header + fl.map(l => {
+    const pot      = (l.potencial || '').toString().toUpperCase().trim().charAt(0);
+    const potClass = ['A','B','C','D','E','F'].includes(pot) ? pot : '?';
+    const recente  = visitadaRecente(l);
+    const visClass = recente ? 'visitada-recente' : '';
+    const total    = l.total_visitas || 0;
+    const temGeo   = !!(l.latitude && l.longitude);
+    const potDesc  = potClass === 'A' ? 'A. 1 Gravame'
+                   : potClass === 'B' ? 'B. 2-5 Gravames'
+                   : potClass === 'C' ? 'C. 6-10 Gravames'
+                   : potClass === 'D' ? 'D. 11-20 Gravames'
+                   : potClass === 'E' ? 'E. 21-30 Gravames'
+                   : potClass === 'F' ? 'F. > 30 Gravames' : '';
+
+    return `<div class="loja-item ${visClass}" id="it-${l.id}">
+      <div class="loja-nome" title="${l.nome_loja}">${l.nome_loja}${!temGeo ? ' <span class="sem-gps-badge">⚠</span>' : ''}</div>
+      <div>${potDesc ? `<span class="pot-label pot-${potClass}">${potDesc}</span>` : '—'}</div>
+      <div class="visit-count">${total > 0 ? total : ''}</div>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════
+//  HISTÓRICO
+// ══════════════════════════════════════════
+async function carregarHistorico() {
+  const d  = document.getElementById('dtHistorico').value;
+  const el = document.getElementById('tblHistorico');
+  if (!d) return;
+  el.innerHTML = '<div class="msg">Buscando...</div>';
+  const { data, error } = await sb.from('visitas')
+    .select('*, lojas(nome_loja, bairro, zona)')
+    .gte('visitada_em', d+'T00:00:00').lte('visitada_em', d+'T23:59:59')
+    .order('visitada_em', { ascending: false });
+  if (error) { el.innerHTML = `<div class="msg err">❌ ${error.message}</div>`; return; }
+  if (!data?.length) { el.innerHTML = '<div class="msg">Nenhuma visita neste dia</div>'; return; }
+  el.innerHTML = `
+    <p style="font-size:0.78rem;color:var(--dim);margin-bottom:10px">${data.length} visita(s) · ${new Date(d+'T12:00:00').toLocaleDateString('pt-BR')}</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Loja</th><th>Bairro</th><th>Zona</th><th>Horário</th><th>Tipo</th></tr></thead>
+      <tbody>${data.map(r => `
+        <tr>
+          <td>${r.lojas?.nome_loja||'—'}</td>
+          <td>${r.lojas?.bairro||'—'}</td>
+          <td>${r.lojas?.zona||'—'}</td>
+          <td>${new Date(r.visitada_em).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</td>
+          <td>${r.observacao === 'automática' ? '🤖 Auto' : '👆 Manual'}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table></div>`;
+}
+
+// ══════════════════════════════════════════
+//  GEOCODIFICAÇÃO (OpenStreetMap Nominatim)
+// ══════════════════════════════════════════
+const GOOGLE_API_KEY = 'AIzaSyAjW7kptv1C6T46O84lcRDUNqEryO9viRE';
+
+async function googleGeocode(query) {
+  try {
+    const r = await fetch(
+      `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(query)}&key=${GOOGLE_API_KEY}&region=br&language=pt-BR`
+    );
+    const d = await r.json();
+    if (d.status === 'OK' && d.results?.[0]) {
+      const loc = d.results[0].geometry.location;
+      return { lat: loc.lat, lon: loc.lng };
+    }
+  } catch(e) {}
+  return null;
+}
+
+async function geocodificarEndereco(logradouro, numero, bairro, cep) {
+  // Tentativa 1: endereço completo
+  let result = await googleGeocode(`${logradouro} ${numero}, ${bairro}, São Paulo, SP, Brasil`);
+  if (result) return result;
+
+  // Tentativa 2: sem número (pode estar errado na planilha)
+  result = await googleGeocode(`${logradouro}, ${bairro}, São Paulo, SP, Brasil`);
+  if (result) return result;
+
+  // Tentativa 3: só rua + cidade (ignora bairro com grafia estranha)
+  result = await googleGeocode(`${logradouro} ${numero}, São Paulo, Brasil`);
+  if (result) return result;
+
+  // Tentativa 4: só CEP
+  if (cep) {
+    const cepLimpo = cep.replace(/\D/g,'');
+    result = await googleGeocode(`CEP ${cepLimpo}, Brasil`);
+    if (result) return result;
+  }
+
+  return null;
+}
+
+async function geocodificarPendentes() {
+  const { data: pendentes } = await sb.from('lojas').select('id, logradouro, numero, bairro, cep').eq('ativa', true).is('latitude', null);
+  if (!pendentes?.length) return toast('Todas as lojas já têm coordenadas! ✅', 'ok');
+
+  const prog = document.getElementById('geoProgress');
+  const bar  = document.getElementById('progBar');
+  const stat = document.getElementById('geoStatus');
+  const det  = document.getElementById('geoDetalhe');
+  prog.style.display = 'block';
+
+  let ok = 0, fail = 0;
+  for (let i = 0; i < pendentes.length; i++) {
+    const l = pendentes[i];
+    stat.textContent = `Geocodificando ${i+1}/${pendentes.length}...`;
+    det.textContent  = `${l.logradouro} ${l.numero}, ${l.bairro}`;
+    bar.style.width  = ((i+1)/pendentes.length*100) + '%';
+
+    const coord = await geocodificarEndereco(l.logradouro, l.numero, l.bairro, l.cep);
+    if (coord) {
+      await sb.from('lojas').update({ latitude: coord.lat, longitude: coord.lon }).eq('id', l.id);
+      ok++;
+    } else { fail++; }
+
+    await new Promise(r => setTimeout(r, 150)); // pausa leve entre requisições
+  }
+
+  prog.style.display = 'none';
+  toast(`Geocodificadas: ${ok} ✅  Sem resultado: ${fail}`, ok > 0 ? 'ok' : 'err');
+  await carregarLojas();
+}
+
+// ══════════════════════════════════════════
+//  UPLOAD + IMPORT
+// ══════════════════════════════════════════
+function onDragOver(e) { e.preventDefault(); document.getElementById('dropZone').classList.add('drag'); }
+function onDragLeave()  { document.getElementById('dropZone').classList.remove('drag'); }
+function onDrop(e)      { e.preventDefault(); onDragLeave(); processarArquivo(e.dataTransfer.files[0]); }
+function onFile(e)      { processarArquivo(e.target.files[0]); }
+
+function processarArquivo(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const wb   = XLSX.read(e.target.result, { type: 'binary' });
+    const ws   = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+
+    // Mapeamento exato das colunas da planilha:
+    // dn | cnpj | nome_loja | gcm | coordenador | logradouro | numero | bairro | cep | zona
+    const col = (row, ...chaves) => {
+      const k = Object.keys(row).find(c =>
+        chaves.some(ch => c.trim().toLowerCase() === ch.toLowerCase())
+      ) || Object.keys(row).find(c =>
+        chaves.some(ch => c.trim().toLowerCase().includes(ch.toLowerCase()))
+      );
+      return k ? String(row[k]).trim() : '';
+    };
+
+    const dados = rows.map(r => ({
+      dn:               col(r, 'dn', 'DN'),
+      cnpj:             col(r, 'cnpj', 'CNPJ'),
+      nome_loja:        col(r, 'nome_loja', 'NOME DA LOJA', 'NOMELOJA', 'NOME_LOJA'),
+      gcm:              col(r, 'gcm', 'GCM'),
+      nome_responsavel: col(r, 'coordenador', 'COORDENADOR', 'nome_responsavel', 'RESPONSAVEL'),
+      logradouro:       col(r, 'logradouro', 'LOGRADOURO', 'NOME'),
+      numero:           col(r, 'numero', 'NUMERO', 'Nº', 'N°', 'NUM'),
+      bairro:           col(r, 'bairro', 'BAIRRO'),
+      cep:              col(r, 'cep', 'CEP'),
+      zona:             col(r, 'zona', 'ZONA'),
+      potencial:        col(r, 'potencial', 'POTENCIAL'),
+    })).filter(l => l.nome_loja);
+
+    if (!dados.length) return toast('Nenhuma loja encontrada', 'err');
+
+    document.getElementById('preview').innerHTML = `
+      <div style="margin-top:12px;padding:14px;background:var(--surface2);border-radius:10px;font-size:0.82rem">
+        <strong>${dados.length} lojas encontradas</strong>
+        <div style="color:var(--dim);margin-top:4px">Ex: ${dados[0].nome_loja} · ${dados[0].bairro}</div>
+        <div style="color:var(--dim);margin-top:4px;font-size:0.75rem">📡 Os endereços serão geocodificados automaticamente após a importação</div>
+        <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+          <button class="btn btn-primary" onclick="importar(window._imp)">⬆ Importar + Geocodificar</button>
+          <button class="btn btn-outline" onclick="document.getElementById('preview').innerHTML=''">Cancelar</button>
+        </div>
+      </div>`;
+    window._imp = dados;
+  };
+  reader.readAsBinaryString(file);
+}
+
+async function importar(dados) {
+  toast('Importando...', '');
+  // Upsert: atualiza se DN já existe, insere se é novo
+  // Preserva latitude/longitude de lojas já geocodificadas
+  const { error } = await sb.from('lojas').upsert(dados, {
+    onConflict: 'dn',
+    ignoreDuplicates: false
+  });
+  if (error) return toast('Erro: ' + error.message, 'err');
+  document.getElementById('preview').innerHTML = '';
+  document.getElementById('fileIn').value = '';
+  toast(`${dados.length} lojas importadas/atualizadas! ✅`, 'ok');
+  await carregarTabelaLojas();
+  await carregarLojas();
+  setTimeout(geocodificarPendentes, 1500);
+}
+
+// ══════════════════════════════════════════
+//  PAINEL: TABELA
+// ══════════════════════════════════════════
+async function carregarTabelaLojas() {
+  const el = document.getElementById('tblLojas');
+  el.innerHTML = '<div class="msg">Carregando...</div>';
+  const { data, error } = await sb.from('lojas').select('dn, nome_loja, bairro, zona, latitude, longitude').eq('ativa', true).order('nome_loja');
+  if (error) { el.innerHTML = `<div class="msg err">❌ ${error.message}</div>`; return; }
+  if (!data?.length) { el.innerHTML = '<div class="msg">Nenhuma loja cadastrada ainda</div>'; return; }
+  const semGeo = data.filter(l => !l.latitude).length;
+  el.innerHTML = `
+    <p style="font-size:0.78rem;color:var(--dim);margin-bottom:10px">
+      ${data.length} lojas · 
+      <span style="color:${semGeo?'var(--orange)':'var(--green)'}">
+        ${semGeo ? `⚠️ ${semGeo} sem coordenadas GPS — clique "Geocodificar"` : '✅ Todas geocodificadas'}
+      </span>
+    </p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>DN</th><th>Nome</th><th>Bairro</th><th>Zona</th><th>GPS</th></tr></thead>
+      <tbody>${data.map(l => `
+        <tr>
+          <td>${l.dn||'—'}</td><td>${l.nome_loja}</td>
+          <td>${l.bairro||'—'}</td><td>${l.zona||'—'}</td>
+          <td>${l.latitude ? '✅' : '⚠️'}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table></div>`;
+}
+
+async function resetVisitas() {
+  const d = hoje();
+  const dataFmt = new Date(d+'T12:00:00').toLocaleDateString('pt-BR');
+  if (!confirm(`Apagar todas as visitas de hoje (${dataFmt})?
+
+As lojas permanecem cadastradas.`)) return;
+  const { error } = await sb.from('visitas').delete()
+    .gte('visitada_em', d+'T00:00:00')
+    .lte('visitada_em', d+'T23:59:59');
+  if (error) return toast('Erro: ' + error.message, 'err');
+  marcadas.clear();
+  Object.keys(ultimaMarcacao).forEach(k => delete ultimaMarcacao[k]);
+  toast('Visitas de hoje apagadas ✅', 'ok');
+  await carregarLojas();
+}
+
+async function limpar() {
+  if (!confirm('Apagar TODAS as lojas e visitas?')) return;
+  await sb.from('visitas').delete().neq('id','00000000-0000-0000-0000-000000000000');
+  await sb.from('lojas').delete().neq('id','00000000-0000-0000-0000-000000000000');
+  toast('Dados apagados', 'ok');
+  carregarTabelaLojas(); carregarLojas();
+}
+
+async function exportar() {
+  const { data } = await sb.from('lojas').select('*').eq('ativa', true);
+  if (!data?.length) return toast('Sem dados para exportar', 'err');
+  const ws = XLSX.utils.json_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Lojas');
+  XLSX.writeFile(wb, 'lojas_exportadas.xlsx');
+}
+
+window.addEventListener('load', init);
+</script>
+</body>
+</html>
