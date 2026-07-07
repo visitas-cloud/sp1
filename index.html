@@ -3,7 +3,22 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Visitas de Lojas</title>
+  <title>Visitas LM Consig</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0d2d4f" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Visitas" />
+
+  <!-- Favicons -->
+  <link rel="icon" type="image/x-icon"    href="favicon.ico" />
+  <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png" />
+  <link rel="apple-touch-icon"            href="apple-touch-icon.png" />
+
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -577,7 +592,7 @@ function iniciarLongPress(e, id) {
 
     if (vsHoje && vsHoje.length > 0) {
       // Tem visita hoje → desmarcar
-      await desmarcaVisita(loja, d);
+      await desmarcaVisita(loja);
     } else {
       // Sem visita hoje → marcar manualmente
       await marcaManual(loja);
@@ -611,23 +626,36 @@ async function marcaManual(loja) {
   );
 }
 
-async function desmarcaVisita(loja, d) {
-  const { error } = await sb.from('visitas')
-    .delete()
+async function desmarcaVisita(loja) {
+  // Busca a visita mais recente desta loja (qualquer dia)
+  const { data: vsRecente, error: errBusca } = await sb.from('visitas')
+    .select('id, visitada_em')
     .eq('loja_id', loja.id)
-    .gte('visitada_em', d+'T00:00:00')
-    .lte('visitada_em', d+'T23:59:59');
+    .order('visitada_em', { ascending: false })
+    .limit(1);
 
+  if (errBusca || !vsRecente?.length) {
+    toast('Nenhuma visita encontrada', 'err'); return;
+  }
+
+  const { error } = await sb.from('visitas').delete().eq('id', vsRecente[0].id);
   if (error) { toast('Erro ao desmarcar: ' + error.message, 'err'); return; }
 
   // Atualiza memória
-  loja.visitada_hoje = false;
-  loja.ultima_visita = null;
   loja.total_visitas = Math.max(0, (loja.total_visitas || 1) - 1);
   marcadas.delete(loja.id);
   delete ultimaMarcacao[loja.id];
 
-  toast('Visita removida ↩', 'ok');
+  // Se era a visita de hoje, limpa o flag
+  const d = hoje();
+  const eraHoje = vsRecente[0].visitada_em.startsWith(d);
+  if (eraHoje) {
+    loja.visitada_hoje = false;
+    loja.ultima_visita = null;
+  }
+
+  const quando = eraHoje ? 'de hoje' : new Date(vsRecente[0].visitada_em).toLocaleDateString('pt-BR');
+  toast(`Visita ${quando} removida ↩`, 'ok');
   renderLista();
 }
 
@@ -1000,6 +1028,74 @@ async function exportar() {
 }
 
 window.addEventListener('load', init);
+</script>
+
+<!-- ═══ PWA: Service Worker + Install Banner + Wake Lock ═══ -->
+<div id="pwa-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#0d2d4f;color:#fff;padding:14px 16px;display:none;align-items:center;gap:12px;z-index:9999;box-shadow:0 -2px 12px rgba(0,0,0,.35);">
+  <img src="android-chrome-192x192.png" style="width:42px;height:42px;border-radius:10px;" alt="Visitas" />
+  <div style="flex:1;font-size:0.82rem;font-family:var(--font)">
+    <strong style="display:block;font-size:0.9rem">Instalar como App</strong>
+    Adicione à tela inicial para usar como app nativo
+  </div>
+  <button onclick="instalarPWA()" style="background:#3cb87a;color:#fff;border:none;padding:8px 14px;border-radius:8px;font-size:0.8rem;cursor:pointer;font-family:var(--font);font-weight:600">Instalar</button>
+  <button onclick="fecharBanner()" style="background:transparent;color:#aaa;border:none;font-size:1.2rem;cursor:pointer;padding:4px 8px;">✕</button>
+</div>
+
+<script>
+// ── Registra Service Worker ──
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(reg => console.log('SW registrado:', reg.scope))
+      .catch(e  => console.warn('SW falhou:', e));
+  });
+}
+
+// ── Banner de instalação (Android Chrome) ──
+let _deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  _deferredPrompt = e;
+  if (!localStorage.getItem('pwa-ok')) {
+    const b = document.getElementById('pwa-banner');
+    b.style.display = 'flex';
+  }
+});
+
+function instalarPWA() {
+  if (!_deferredPrompt) return;
+  _deferredPrompt.prompt();
+  _deferredPrompt.userChoice.then(() => {
+    fecharBanner();
+    localStorage.setItem('pwa-ok', '1');
+    _deferredPrompt = null;
+  });
+}
+function fecharBanner() {
+  document.getElementById('pwa-banner').style.display = 'none';
+  localStorage.setItem('pwa-ok', '1');
+}
+
+window.addEventListener('appinstalled', () => {
+  fecharBanner();
+  console.log('PWA instalado com sucesso!');
+});
+
+// ── Wake Lock: mantém tela acesa enquanto rastreando ──
+let _wakeLock = null;
+async function pedirWakeLock() {
+  if (!('wakeLock' in navigator)) return;
+  try {
+    _wakeLock = await navigator.wakeLock.request('screen');
+    console.log('Wake Lock ativo');
+  } catch(e) { console.warn('Wake Lock negado:', e.message); }
+}
+// Reativa se voltar do background
+document.addEventListener('visibilitychange', async () => {
+  if (document.visibilityState === 'visible' && !_wakeLock) await pedirWakeLock();
+});
+// Ativa no primeiro toque do usuário
+document.addEventListener('click', () => { if (!_wakeLock) pedirWakeLock(); }, { once: true });
 </script>
 </body>
 </html>
