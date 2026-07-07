@@ -763,7 +763,7 @@ function renderLista() {
     return;
   }
 
-  const header = `<div class="loja-list-header"><span>LOJA</span><span>POTENCIAL</span><span style="text-align:center">VIS.</span></div>`;
+  const header = `<div class="loja-list-header"><span>LOJA</span><span>POTENCIAL</span><span style="text-align:right">VIS.</span></div>`;
 
   document.getElementById('lista').innerHTML = header + fl.map(l => {
     const pot      = (l.potencial || '').toString().toUpperCase().trim().charAt(0);
@@ -782,7 +782,7 @@ function renderLista() {
     return `<div class="loja-item ${visClass}" id="it-${l.id}" onpointerdown="iniciarLongPress(event,'${l.id}')" onpointerup="cancelarLongPress(event)" onpointerleave="cancelarLongPress(event)" oncontextmenu="return false">
       <div class="loja-nome" title="${l.nome_loja}">${l.nome_loja}${!temGeo ? ' <span class="sem-gps-badge">⚠</span>' : ''}</div>
       <div>${potDesc ? `<span class="pot-label pot-${potClass}">${potDesc}</span>` : '—'}</div>
-      <div class="visit-count">${total > 0 ? total : ''}</div>
+      <div class="visit-count" style="text-align:right">${total > 0 ? total : ''}</div>
     </div>`;
   }).join('');
 }
