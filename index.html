@@ -111,6 +111,20 @@
     }
     .loja-item:last-child { border-bottom: none; }
     .loja-item:hover { background: var(--surface2); }
+    .loja-item.pressing {
+      background: #e8f5e9 !important;
+      transition: background 0.1s;
+    }
+    .loja-item.pressing::after {
+      content: '';
+      position: absolute; left: 0; bottom: 0; height: 3px;
+      background: var(--green);
+      animation: longpress-bar 1s linear forwards;
+    }
+    @keyframes longpress-bar {
+      from { width: 0%; }
+      to   { width: 100%; }
+    }
 
     /* Visitada recentemente — fundo verde */
     .loja-item.visitada-recente {
@@ -532,6 +546,91 @@ async function registrarVisita(loja, lat, lon, dist, automatica = false) {
   else toast('Visita registrada! 📍', 'ok');
 }
 
+// ══════════════════════════════════════════
+//  LONG PRESS — marcar / desmarcar manual
+// ══════════════════════════════════════════
+let _lpTimer = null;
+let _lpId    = null;
+
+function iniciarLongPress(e, id) {
+  cancelarLongPress();
+  _lpId = id;
+  const el = document.getElementById('it-' + id);
+  if (el) el.classList.add('pressing');
+
+  _lpTimer = setTimeout(async () => {
+    _lpTimer = null;
+    if (el) el.classList.remove('pressing');
+    if (navigator.vibrate) navigator.vibrate(60);
+
+    const loja = lojas.find(l => l.id === id);
+    if (!loja) return;
+
+    // Verifica se tem visita hoje para decidir marcar ou desmarcar
+    const d = hoje();
+    const { data: vsHoje } = await sb.from('visitas')
+      .select('id')
+      .eq('loja_id', id)
+      .gte('visitada_em', d+'T00:00:00')
+      .lte('visitada_em', d+'T23:59:59')
+      .limit(1);
+
+    if (vsHoje && vsHoje.length > 0) {
+      // Tem visita hoje → desmarcar
+      await desmarcaVisita(loja, d);
+    } else {
+      // Sem visita hoje → marcar manualmente
+      await marcaManual(loja);
+    }
+  }, 1000);
+}
+
+function cancelarLongPress(e) {
+  if (_lpTimer) { clearTimeout(_lpTimer); _lpTimer = null; }
+  if (_lpId) {
+    const el = document.getElementById('it-' + _lpId);
+    if (el) el.classList.remove('pressing');
+    _lpId = null;
+  }
+}
+
+async function marcaManual(loja) {
+  const registrar = async (lat, lon) => {
+    const dist = (loja.latitude && loja.longitude)
+      ? distancia(lat, lon, loja.latitude, loja.longitude) : 0;
+    await registrarVisita(loja, lat, lon, dist, false);
+  };
+  if (posAtual) { await registrar(posAtual.latitude, posAtual.longitude); return; }
+  navigator.geolocation.getCurrentPosition(
+    async pos => registrar(pos.coords.latitude, pos.coords.longitude),
+    async () => {
+      // Sem GPS: registra sem coordenadas
+      await registrarVisita(loja, null, null, 0, false);
+    },
+    { enableHighAccuracy: true, timeout: 6000 }
+  );
+}
+
+async function desmarcaVisita(loja, d) {
+  const { error } = await sb.from('visitas')
+    .delete()
+    .eq('loja_id', loja.id)
+    .gte('visitada_em', d+'T00:00:00')
+    .lte('visitada_em', d+'T23:59:59');
+
+  if (error) { toast('Erro ao desmarcar: ' + error.message, 'err'); return; }
+
+  // Atualiza memória
+  loja.visitada_hoje = false;
+  loja.ultima_visita = null;
+  loja.total_visitas = Math.max(0, (loja.total_visitas || 1) - 1);
+  marcadas.delete(loja.id);
+  delete ultimaMarcacao[loja.id];
+
+  toast('Visita removida ↩', 'ok');
+  renderLista();
+}
+
 // Botão manual
 async function marcar(id, btn) {
   btn.disabled = true; btn.textContent = '📡...';
@@ -652,7 +751,7 @@ function renderLista() {
                    : potClass === 'E' ? 'E. 21-30 Gravames'
                    : potClass === 'F' ? 'F. > 30 Gravames' : '';
 
-    return `<div class="loja-item ${visClass}" id="it-${l.id}">
+    return `<div class="loja-item ${visClass}" id="it-${l.id}" onpointerdown="iniciarLongPress(event,'${l.id}')" onpointerup="cancelarLongPress(event)" onpointerleave="cancelarLongPress(event)" oncontextmenu="return false">
       <div class="loja-nome" title="${l.nome_loja}">${l.nome_loja}${!temGeo ? ' <span class="sem-gps-badge">⚠</span>' : ''}</div>
       <div>${potDesc ? `<span class="pot-label pot-${potClass}">${potDesc}</span>` : '—'}</div>
       <div class="visit-count">${total > 0 ? total : ''}</div>
