@@ -191,17 +191,18 @@
       width: 90px; min-width: 90px;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
+    .metro-nome.atrasado { color: #e53e3e; }
 
-    /* Campos da barra */
+    /* Campos da barra — sempre 8 slots no total */
     .metro-barra { display: flex; gap: 3px; flex: 1; }
     .metro-campo {
       flex: 1; height: 22px; border-radius: 5px;
       border: 1.5px solid rgba(0,0,0,0.12);
       transition: background .2s;
     }
-    .metro-campo.feito   { /* preenchido com cor do grupo */ }
-    .metro-campo.atrasado { background: #e53e3e !important; border-color: #c53030 !important; }
-    .metro-campo.vazio   { background: #e9ecef; }
+    .metro-campo.feito  { /* preenchido com cor do grupo */ }
+    .metro-campo.vazio  { background: #e9ecef; }
+    .metro-campo.oculto { background: transparent; border-color: transparent; pointer-events: none; }
 
     /* Contadores */
     .metro-count {
@@ -1207,30 +1208,37 @@ async function carregarMetro() {
       const projecao = meta * proporcao;
       const atrasado = meta > 0 && visitas < Math.floor(projecao);
 
-      // Monta campos da barra
+      // Monta campos da barra — sempre 8 slots
+      const TOTAL_SLOTS = 8;
       let barraHtml = '';
+
       if (meta === 0) {
-        // Potencial 0: campo cinza único
-        barraHtml = `<div class="metro-campo vazio"></div>`;
+        // Potencial 0: 8 slots ocultos (só mostra espaço)
+        for (let i = 0; i < TOTAL_SLOTS; i++)
+          barraHtml += `<div class="metro-campo oculto"></div>`;
       } else {
-        for (let i = 0; i < campos; i++) {
-          if (i < visitas) {
-            // Visitado
-            const cls = atrasado && i === visitas - 1 ? 'atrasado' : cfg.cor;
-            barraHtml += `<div class="metro-campo feito ${cls}"></div>`;
-          } else if (i < Math.ceil(projecao) && atrasado) {
-            // Deveria ter sido visitado mas não foi → vermelho
-            barraHtml += `<div class="metro-campo atrasado"></div>`;
+        for (let i = 0; i < TOTAL_SLOTS; i++) {
+          if (i < campos) {
+            // Slot ativo para este perfil
+            if (i < visitas) {
+              barraHtml += `<div class="metro-campo feito ${cfg.cor}"></div>`;
+            } else {
+              barraHtml += `<div class="metro-campo vazio"></div>`;
+            }
           } else {
-            barraHtml += `<div class="metro-campo vazio"></div>`;
+            // Slot extra (perfis com menos de 8 campos) → transparente
+            barraHtml += `<div class="metro-campo oculto"></div>`;
           }
         }
       }
 
+      const nomeClass = atrasado ? 'metro-nome atrasado' : 'metro-nome';
+      const countTxt  = meta > 0 ? `${visitas}/${meta}` : '—';
+
       html += `<div class="metro-row">
-        <div class="metro-nome" title="${l.nome_loja}">${nomeMetro(l.nome_loja)}</div>
+        <div class="${nomeClass}" title="${l.nome_loja}">${nomeMetro(l.nome_loja)}</div>
         <div class="metro-barra">${barraHtml}</div>
-        <div class="metro-count">${visitas > 0 ? visitas + '/' + meta : (meta > 0 ? '0/'+meta : '—')}</div>
+        <div class="metro-count">${countTxt}</div>
       </div>`;
     });
 
