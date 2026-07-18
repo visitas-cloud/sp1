@@ -203,6 +203,23 @@
     .metro-campo.feito  { /* preenchido com cor do grupo */ }
     .metro-campo.vazio  { background: #e9ecef; }
     .metro-campo.oculto { background: transparent; border-color: transparent; pointer-events: none; }
+    .metro-campo.pressing {
+      opacity: 0.5;
+      transform: scale(0.85);
+      transition: transform 0.1s, opacity 0.1s;
+      position: relative;
+      overflow: hidden;
+    }
+    .metro-campo.pressing::after {
+      content: '';
+      position: absolute; bottom: 0; left: 0; height: 3px;
+      background: rgba(255,255,255,0.8);
+      animation: campo-press 1s linear forwards;
+    }
+    @keyframes campo-press {
+      from { width: 0%; }
+      to   { width: 100%; }
+    }
 
     /* Contadores */
     .metro-count {
@@ -1249,20 +1266,25 @@ async function carregarMetro() {
       let barraHtml = '';
 
       if (meta === 0) {
-        // Potencial 0: 8 slots ocultos (só mostra espaço)
         for (let i = 0; i < TOTAL_SLOTS; i++)
           barraHtml += `<div class="metro-campo oculto"></div>`;
       } else {
         for (let i = 0; i < TOTAL_SLOTS; i++) {
           if (i < campos) {
-            // Slot ativo para este perfil
-            if (i < visitas) {
-              barraHtml += `<div class="metro-campo feito ${cfg.cor}"></div>`;
-            } else {
-              barraHtml += `<div class="metro-campo vazio"></div>`;
-            }
+            const feito = i < visitas;
+            const cls   = feito ? `feito ${cfg.cor}` : 'vazio';
+            // data-loja e data-idx para o longpress
+            barraHtml += `<div class="metro-campo ${cls}"
+              data-loja="${l.id}"
+              data-idx="${i}"
+              data-feito="${feito ? '1' : '0'}"
+              data-de="${de}"
+              data-ate="${ate}"
+              onpointerdown="metroPressStart(event,this)"
+              onpointerup="metroPressEnd(event,this)"
+              onpointerleave="metroPressEnd(event,this)"
+              oncontextmenu="return false"></div>`;
           } else {
-            // Slot extra (perfis com menos de 8 campos) → transparente
             barraHtml += `<div class="metro-campo oculto"></div>`;
           }
         }
@@ -1282,6 +1304,84 @@ async function carregarMetro() {
   });
 
   corpo.innerHTML = html || '<div class="msg">Nenhuma loja encontrada</div>';
+}
+
+// ══════════════════════════════════════════
+//  LONGPRESS NOS QUADRADINHOS DO METRO
+// ══════════════════════════════════════════
+let _mLpTimer = null;
+let _mLpEl    = null;
+
+function metroPressStart(e, el) {
+  e.preventDefault();
+  metroPressEnd(); // cancela qualquer anterior
+  _mLpEl = el;
+  el.classList.add('pressing');
+
+  _mLpTimer = setTimeout(async () => {
+    _mLpTimer = null;
+    el.classList.remove('pressing');
+    if (navigator.vibrate) navigator.vibrate(60);
+
+    const lojaId = el.dataset.loja;
+    const feito  = el.dataset.feito === '1';
+    const de     = el.dataset.de;
+    const ate    = el.dataset.ate;
+
+    if (feito) {
+      await metroDesmarcar(lojaId, de, ate, el);
+    } else {
+      await metroMarcar(lojaId, el);
+    }
+  }, 1000);
+}
+
+function metroPressEnd(e, el) {
+  if (_mLpTimer) { clearTimeout(_mLpTimer); _mLpTimer = null; }
+  if (_mLpEl) { _mLpEl.classList.remove('pressing'); _mLpEl = null; }
+}
+
+async function metroMarcar(lojaId, el) {
+  const loja = lojas.find(l => l.id === lojaId);
+  if (!loja) return;
+
+  // Pega posição atual se disponível
+  const lat = posAtual?.latitude  || null;
+  const lon = posAtual?.longitude || null;
+  const dist = (lat && loja.latitude)
+    ? distancia(lat, lon, loja.latitude, loja.longitude) : 0;
+
+  const { error } = await sb.from('visitas').insert({
+    loja_id: lojaId,
+    latitude_visita:  lat,
+    longitude_visita: lon,
+    distancia_metros: Math.round(dist),
+    observacao: 'manual-metro'
+  });
+
+  if (error) { toast('Erro ao marcar: ' + error.message, 'err'); return; }
+
+  toast('✅ Visita marcada!', 'ok');
+  await carregarMetro(); // recarrega a tela metro
+}
+
+async function metroDesmarcar(lojaId, de, ate, el) {
+  // Remove a visita mais recente da loja no período
+  const { data: vs } = await sb.from('visitas')
+    .select('id')
+    .eq('loja_id', lojaId)
+    .gte('visitada_em', de + 'T00:00:00')
+    .lte('visitada_em', ate + 'T23:59:59')
+    .order('visitada_em', { ascending: false })
+    .limit(1);
+
+  if (!vs || !vs.length) { toast('Nenhuma visita encontrada', 'err'); return; }
+
+  const { error } = await sb.from('visitas').delete().eq('id', vs[0].id);
+  if (error) { toast('Erro ao desmarcar: ' + error.message, 'err'); return; }
+
+  toast('↩ Visita removida', 'ok');
+  await carregarMetro();
 }
 
 async function limpar() {
