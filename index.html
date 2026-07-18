@@ -524,6 +524,7 @@ function showPage(name) {
   document.getElementById('nav-' + name).classList.add('active');
   if (name === 'historico') { document.getElementById('dtHistorico').value = hoje(); carregarHistorico(); }
   if (name === 'painel')    carregarTabelaLojas();
+  if (name === 'metro')     carregarMetro();
 }
 
 function hoje() { return new Date().toISOString().split('T')[0]; }
@@ -818,6 +819,10 @@ async function carregarLojas() {
   }));
 
   renderLista();
+
+  // Se metro estiver aberto, recarrega também
+  const metroAtivo = document.getElementById('page-metro')?.classList.contains('active');
+  if (metroAtivo) carregarMetro();
 }
 
 function renderStats() { /* stats removidos */ }
@@ -971,7 +976,7 @@ async function geocodificarPendentes() {
   prog.style.display = 'none';
   toast(`Geocodificadas: ${ok} ✅  Sem resultado: ${fail}`, ok > 0 ? 'ok' : 'err');
   await carregarLojas();
-  initMetroDatas();
+  await initMetroDatas();
 }
 
 // ══════════════════════════════════════════
@@ -1136,18 +1141,45 @@ function nomeMetro(nome) {
 }
 
 // Inicializa datas com mês atual
-function initMetroDatas() {
+async function initMetroDatas() {
   const hoje_ = new Date();
   const y = hoje_.getFullYear(), m = String(hoje_.getMonth()+1).padStart(2,'0');
   const ultimo = new Date(y, hoje_.getMonth()+1, 0).getDate();
-  document.getElementById('metroDe').value  = `${y}-${m}-01`;
-  document.getElementById('metroAte').value = `${y}-${m}-${String(ultimo).padStart(2,'0')}`;
+  const defaultDe  = `${y}-${m}-01`;
+  const defaultAte = `${y}-${m}-${String(ultimo).padStart(2,'0')}`;
+
+  // Tenta buscar do Supabase
+  try {
+    const { data } = await sb.from('preferencias')
+      .select('chave, valor')
+      .in('chave', ['metro-de', 'metro-ate']);
+
+    const prefs = {};
+    (data || []).forEach(p => prefs[p.chave] = p.valor);
+
+    document.getElementById('metroDe').value  = prefs['metro-de']  || defaultDe;
+    document.getElementById('metroAte').value = prefs['metro-ate'] || defaultAte;
+  } catch(e) {
+    // Fallback: localStorage
+    document.getElementById('metroDe').value  = localStorage.getItem('metro-de')  || defaultDe;
+    document.getElementById('metroAte').value = localStorage.getItem('metro-ate') || defaultAte;
+  }
 }
 
 async function carregarMetro() {
   const de  = document.getElementById('metroDe').value;
   const ate = document.getElementById('metroAte').value;
   if (!de || !ate) { toast('Selecione o período', 'err'); return; }
+
+  // Persiste período no Supabase e localStorage (fallback)
+  localStorage.setItem('metro-de',  de);
+  localStorage.setItem('metro-ate', ate);
+  try {
+    await sb.from('preferencias').upsert([
+      { chave: 'metro-de',  valor: de,  updated_at: new Date().toISOString() },
+      { chave: 'metro-ate', valor: ate, updated_at: new Date().toISOString() },
+    ], { onConflict: 'chave' });
+  } catch(e) { /* silencioso — localStorage já salvou */ }
 
   const corpo = document.getElementById('metro-corpo');
   corpo.innerHTML = '<div class="msg">Carregando...</div>';
