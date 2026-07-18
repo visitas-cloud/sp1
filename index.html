@@ -3,22 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Visitas LM Consig</title>
-
-  <!-- PWA -->
-  <link rel="manifest" href="manifest.json" />
-  <meta name="theme-color" content="#0d2d4f" />
-  <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="Visitas" />
-
-  <!-- Favicons -->
-  <link rel="icon" type="image/x-icon"    href="favicon.ico" />
-  <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png" />
-  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png" />
-  <link rel="apple-touch-icon"            href="apple-touch-icon.png" />
-
+  <title>Visitas de Lojas</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -161,6 +146,84 @@
     }
 
 
+    /* ═══ TELA METRO ═══ */
+    .metro-controls {
+      background: var(--surface); border-radius: 12px;
+      padding: 10px 12px; margin-bottom: 10px;
+      box-shadow: var(--shadow);
+    }
+    .metro-periodo {
+      display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    }
+    .metro-periodo label { font-size: 0.72rem; font-weight: 600; color: var(--navy); }
+    .metro-periodo input[type=date] {
+      border: 1.5px solid var(--border); border-radius: 8px;
+      padding: 5px 8px; font-size: 0.75rem; font-family: var(--font);
+      color: var(--navy); flex: 1; min-width: 110px;
+    }
+    .btn-green {
+      background: var(--green); color: #fff; border: none;
+      padding: 6px 14px; border-radius: 8px; font-size: 0.78rem;
+      font-family: var(--font); font-weight: 600; cursor: pointer;
+    }
+
+    /* Grupo por potencial */
+    .metro-grupo { margin-bottom: 10px; }
+    .metro-grupo-header {
+      display: flex; align-items: center; gap: 8px;
+      padding: 5px 10px; border-radius: 8px 8px 0 0;
+      font-size: 0.7rem; font-weight: 700; letter-spacing: .04em;
+    }
+    .metro-grupo-header .meta-txt {
+      margin-left: auto; font-size: 0.65rem; opacity: .85;
+    }
+
+    /* Linha de loja no metro */
+    .metro-row {
+      display: flex; align-items: center; gap: 6px;
+      padding: 5px 8px;
+      background: var(--surface);
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .metro-row:last-child { border-bottom: none; border-radius: 0 0 8px 8px; }
+    .metro-nome {
+      font-size: 0.68rem; font-weight: 600; color: var(--navy);
+      width: 90px; min-width: 90px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    /* Campos da barra */
+    .metro-barra { display: flex; gap: 3px; flex: 1; }
+    .metro-campo {
+      flex: 1; height: 22px; border-radius: 5px;
+      border: 1.5px solid rgba(0,0,0,0.12);
+      transition: background .2s;
+    }
+    .metro-campo.feito   { /* preenchido com cor do grupo */ }
+    .metro-campo.atrasado { background: #e53e3e !important; border-color: #c53030 !important; }
+    .metro-campo.vazio   { background: #e9ecef; }
+
+    /* Contadores */
+    .metro-count {
+      font-size: 0.65rem; font-weight: 700; color: var(--navy);
+      min-width: 32px; text-align: right;
+    }
+
+    /* Cores por potencial (grupo header + campo feito) */
+    .mpot-F  { background: #111827; color: #fff; }
+    .mpot-E  { background: #7e3af2; color: #fff; }
+    .mpot-D  { background: #1a56db; color: #fff; }
+    .mpot-C  { background: #009c3b; color: #fff; }
+    .mpot-B  { background: #FFA500; color: #000; }
+    .mpot-A  { background: #FFD700; color: #000; }
+    .mpot-0  { background: #adb5bd; color: #fff; }
+    .campo-F  { background: #111827; }
+    .campo-E  { background: #7e3af2; }
+    .campo-D  { background: #1a56db; }
+    .campo-C  { background: #009c3b; }
+    .campo-B  { background: #FFA500; }
+    .campo-A  { background: #FFD700; }
+
     /* Label de potencial com cor por faixa */
     .pot-label {
       font-size: 0.62rem; font-weight: 700;
@@ -297,6 +360,11 @@
       <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
     </svg>
   </button>
+  <button onclick="showPage('metro')" id="nav-metro" title="Metro">
+    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+    </svg>
+  </button>
   <button onclick="showPage('painel')" id="nav-painel" title="Painel">
     <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7">
       <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.7"/>
@@ -332,6 +400,20 @@
 </div>
 
 <!-- HISTÓRICO -->
+<!-- METRO -->
+<div class="page" id="page-metro">
+  <div class="metro-controls">
+    <div class="metro-periodo">
+      <label>De</label>
+      <input type="date" id="metroDe" />
+      <label>Até</label>
+      <input type="date" id="metroAte" />
+      <button class="btn btn-green" onclick="carregarMetro()">Ver</button>
+    </div>
+  </div>
+  <div id="metro-corpo"></div>
+</div>
+
 <div class="page" id="page-historico">
   <div class="card">
     <div style="display:flex;gap:10px;align-items:center">
@@ -763,7 +845,7 @@ function renderLista() {
     return;
   }
 
-  const header = `<div class="loja-list-header"><span>LOJA</span><span>POTENCIAL</span><span style="text-align:right">VIS.</span></div>`;
+  const header = `<div class="loja-list-header"><span>LOJA</span><span>POTENCIAL</span><span style="text-align:center">VIS.</span></div>`;
 
   document.getElementById('lista').innerHTML = header + fl.map(l => {
     const pot      = (l.potencial || '').toString().toUpperCase().trim().charAt(0);
@@ -782,7 +864,7 @@ function renderLista() {
     return `<div class="loja-item ${visClass}" id="it-${l.id}" onpointerdown="iniciarLongPress(event,'${l.id}')" onpointerup="cancelarLongPress(event)" onpointerleave="cancelarLongPress(event)" oncontextmenu="return false">
       <div class="loja-nome" title="${l.nome_loja}">${l.nome_loja}${!temGeo ? ' <span class="sem-gps-badge">⚠</span>' : ''}</div>
       <div>${potDesc ? `<span class="pot-label pot-${potClass}">${potDesc}</span>` : '—'}</div>
-      <div class="visit-count" style="text-align:right">${total > 0 ? total : ''}</div>
+      <div class="visit-count">${total > 0 ? total : ''}</div>
     </div>`;
   }).join('');
 }
@@ -888,6 +970,7 @@ async function geocodificarPendentes() {
   prog.style.display = 'none';
   toast(`Geocodificadas: ${ok} ✅  Sem resultado: ${fail}`, ok > 0 ? 'ok' : 'err');
   await carregarLojas();
+  initMetroDatas();
 }
 
 // ══════════════════════════════════════════
@@ -1010,6 +1093,153 @@ As lojas permanecem cadastradas.`)) return;
   await carregarLojas();
 }
 
+// ══════════════════════════════════════════
+//  TELA METRO
+// ══════════════════════════════════════════
+
+// Configuração: potencial → { meta mensal, campos na barra, cor }
+const METRO_CFG = {
+  'F': { meta: 8, campos: 8, cor: 'campo-F', hdr: 'mpot-F', label: 'F. > 30 Gravames'    },
+  'E': { meta: 8, campos: 8, cor: 'campo-E', hdr: 'mpot-E', label: 'E. 21-30 Gravames'   },
+  'D': { meta: 6, campos: 6, cor: 'campo-D', hdr: 'mpot-D', label: 'D. 11-20 Gravames'   },
+  'C': { meta: 4, campos: 4, cor: 'campo-C', hdr: 'mpot-C', label: 'C. 6-10 Gravames'    },
+  'B': { meta: 2, campos: 2, cor: 'campo-B', hdr: 'mpot-B', label: 'B. 2-5 Gravames'     },
+  'A': { meta: 1, campos: 1, cor: 'campo-A', hdr: 'mpot-A', label: 'A. 1 Gravame'        },
+  '0': { meta: 0, campos: 1, cor: ''        , hdr: 'mpot-0', label: '0 Gravames'          },
+};
+
+// Dias úteis entre duas datas (seg-sex)
+function diasUteis(de, ate) {
+  let count = 0, d = new Date(de);
+  const fim = new Date(ate);
+  while (d <= fim) {
+    const dw = d.getDay();
+    if (dw !== 0 && dw !== 6) count++;
+    d.setDate(d.getDate() + 1);
+  }
+  return count;
+}
+
+// Dias úteis já passados no período até hoje
+function diasUteisPassados(de, ate) {
+  const hoje_ = new Date(); hoje_.setHours(23,59,59);
+  const fim = new Date(ate) < hoje_ ? new Date(ate) : hoje_;
+  return diasUteis(de, fim < new Date(de) ? de : fim);
+}
+
+// Encurta nome: pega até 2 primeiras palavras
+function nomeMetro(nome) {
+  if (!nome) return '—';
+  const partes = nome.trim().split(/\s+/);
+  return partes.slice(0, 2).join(' ');
+}
+
+// Inicializa datas com mês atual
+function initMetroDatas() {
+  const hoje_ = new Date();
+  const y = hoje_.getFullYear(), m = String(hoje_.getMonth()+1).padStart(2,'0');
+  const ultimo = new Date(y, hoje_.getMonth()+1, 0).getDate();
+  document.getElementById('metroDe').value  = `${y}-${m}-01`;
+  document.getElementById('metroAte').value = `${y}-${m}-${String(ultimo).padStart(2,'0')}`;
+}
+
+async function carregarMetro() {
+  const de  = document.getElementById('metroDe').value;
+  const ate = document.getElementById('metroAte').value;
+  if (!de || !ate) { toast('Selecione o período', 'err'); return; }
+
+  const corpo = document.getElementById('metro-corpo');
+  corpo.innerHTML = '<div class="msg">Carregando...</div>';
+
+  // Busca visitas no período
+  const { data: vsData, error } = await sb
+    .from('visitas')
+    .select('loja_id')
+    .gte('visitada_em', de + 'T00:00:00')
+    .lte('visitada_em', ate + 'T23:59:59');
+
+  if (error) { corpo.innerHTML = `<div class="msg err">❌ ${error.message}</div>`; return; }
+
+  // Conta visitas por loja
+  const vmCount = {};
+  (vsData || []).forEach(v => { vmCount[v.loja_id] = (vmCount[v.loja_id] || 0) + 1; });
+
+  // Calcula projeção
+  const duTotal   = diasUteis(de, ate);
+  const duPassado = diasUteisPassados(de, ate);
+  const proporcao = duTotal > 0 ? duPassado / duTotal : 0;
+
+  // Agrupa lojas por potencial (F→A→0)
+  const ordem = ['F','E','D','C','B','A','0'];
+  const grupos = {};
+  ordem.forEach(p => grupos[p] = []);
+
+  lojas.forEach(l => {
+    const p = (l.potencial || '0').toString().toUpperCase().trim().charAt(0);
+    const chave = ['A','B','C','D','E','F'].includes(p) ? p : '0';
+    grupos[chave].push(l);
+  });
+
+  let html = '';
+
+  ordem.forEach(pot => {
+    const lista = grupos[pot];
+    if (!lista.length) return;
+    const cfg = METRO_CFG[pot];
+
+    // Ordena lojas pelo nome
+    lista.sort((a,b) => (a.nome_loja||'').localeCompare(b.nome_loja||''));
+
+    // Header do grupo
+    const metaDesc = cfg.meta > 0 ? `Meta: ${cfg.meta} vis./mês` : 'Sem meta';
+    html += `<div class="metro-grupo">
+      <div class="metro-grupo-header ${cfg.hdr}">
+        <span>${cfg.label}</span>
+        <span class="meta-txt">${metaDesc}</span>
+      </div>`;
+
+    lista.forEach(l => {
+      const visitas  = vmCount[l.id] || 0;
+      const campos   = cfg.campos;
+      const meta     = cfg.meta;
+
+      // Projeção esperada até agora
+      const projecao = meta * proporcao;
+      const atrasado = meta > 0 && visitas < Math.floor(projecao);
+
+      // Monta campos da barra
+      let barraHtml = '';
+      if (meta === 0) {
+        // Potencial 0: campo cinza único
+        barraHtml = `<div class="metro-campo vazio"></div>`;
+      } else {
+        for (let i = 0; i < campos; i++) {
+          if (i < visitas) {
+            // Visitado
+            const cls = atrasado && i === visitas - 1 ? 'atrasado' : cfg.cor;
+            barraHtml += `<div class="metro-campo feito ${cls}"></div>`;
+          } else if (i < Math.ceil(projecao) && atrasado) {
+            // Deveria ter sido visitado mas não foi → vermelho
+            barraHtml += `<div class="metro-campo atrasado"></div>`;
+          } else {
+            barraHtml += `<div class="metro-campo vazio"></div>`;
+          }
+        }
+      }
+
+      html += `<div class="metro-row">
+        <div class="metro-nome" title="${l.nome_loja}">${nomeMetro(l.nome_loja)}</div>
+        <div class="metro-barra">${barraHtml}</div>
+        <div class="metro-count">${visitas > 0 ? visitas + '/' + meta : (meta > 0 ? '0/'+meta : '—')}</div>
+      </div>`;
+    });
+
+    html += '</div>';
+  });
+
+  corpo.innerHTML = html || '<div class="msg">Nenhuma loja encontrada</div>';
+}
+
 async function limpar() {
   if (!confirm('Apagar TODAS as lojas e visitas?')) return;
   await sb.from('visitas').delete().neq('id','00000000-0000-0000-0000-000000000000');
@@ -1028,74 +1258,6 @@ async function exportar() {
 }
 
 window.addEventListener('load', init);
-</script>
-
-<!-- ═══ PWA: Service Worker + Install Banner + Wake Lock ═══ -->
-<div id="pwa-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#0d2d4f;color:#fff;padding:14px 16px;display:none;align-items:center;gap:12px;z-index:9999;box-shadow:0 -2px 12px rgba(0,0,0,.35);">
-  <img src="android-chrome-192x192.png" style="width:42px;height:42px;border-radius:10px;" alt="Visitas" />
-  <div style="flex:1;font-size:0.82rem;font-family:var(--font)">
-    <strong style="display:block;font-size:0.9rem">Instalar como App</strong>
-    Adicione à tela inicial para usar como app nativo
-  </div>
-  <button onclick="instalarPWA()" style="background:#3cb87a;color:#fff;border:none;padding:8px 14px;border-radius:8px;font-size:0.8rem;cursor:pointer;font-family:var(--font);font-weight:600">Instalar</button>
-  <button onclick="fecharBanner()" style="background:transparent;color:#aaa;border:none;font-size:1.2rem;cursor:pointer;padding:4px 8px;">✕</button>
-</div>
-
-<script>
-// ── Registra Service Worker ──
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js')
-      .then(reg => console.log('SW registrado:', reg.scope))
-      .catch(e  => console.warn('SW falhou:', e));
-  });
-}
-
-// ── Banner de instalação (Android Chrome) ──
-let _deferredPrompt = null;
-window.addEventListener('beforeinstallprompt', e => {
-  e.preventDefault();
-  _deferredPrompt = e;
-  if (!localStorage.getItem('pwa-ok')) {
-    const b = document.getElementById('pwa-banner');
-    b.style.display = 'flex';
-  }
-});
-
-function instalarPWA() {
-  if (!_deferredPrompt) return;
-  _deferredPrompt.prompt();
-  _deferredPrompt.userChoice.then(() => {
-    fecharBanner();
-    localStorage.setItem('pwa-ok', '1');
-    _deferredPrompt = null;
-  });
-}
-function fecharBanner() {
-  document.getElementById('pwa-banner').style.display = 'none';
-  localStorage.setItem('pwa-ok', '1');
-}
-
-window.addEventListener('appinstalled', () => {
-  fecharBanner();
-  console.log('PWA instalado com sucesso!');
-});
-
-// ── Wake Lock: mantém tela acesa enquanto rastreando ──
-let _wakeLock = null;
-async function pedirWakeLock() {
-  if (!('wakeLock' in navigator)) return;
-  try {
-    _wakeLock = await navigator.wakeLock.request('screen');
-    console.log('Wake Lock ativo');
-  } catch(e) { console.warn('Wake Lock negado:', e.message); }
-}
-// Reativa se voltar do background
-document.addEventListener('visibilitychange', async () => {
-  if (document.visibilityState === 'visible' && !_wakeLock) await pedirWakeLock();
-});
-// Ativa no primeiro toque do usuário
-document.addEventListener('click', () => { if (!_wakeLock) pedirWakeLock(); }, { once: true });
 </script>
 </body>
 </html>
