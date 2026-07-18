@@ -524,7 +524,11 @@ function showPage(name) {
   document.getElementById('nav-' + name).classList.add('active');
   if (name === 'historico') { document.getElementById('dtHistorico').value = hoje(); carregarHistorico(); }
   if (name === 'painel')    carregarTabelaLojas();
-  if (name === 'metro')     carregarMetro();
+  if (name === 'metro') {
+    // Garante que as datas estão preenchidas antes de carregar
+    if (!document.getElementById('metroDe').value) initMetroDatas().then(carregarMetro);
+    else carregarMetro();
+  }
 }
 
 function hoje() { return new Date().toISOString().split('T')[0]; }
@@ -782,6 +786,7 @@ async function init() {
     return;
   }
   await carregarLojas();
+  await initMetroDatas();
   document.getElementById('dtHistorico').value = hoje();
   setInterval(carregarLojas, 60000);
 }
@@ -976,7 +981,6 @@ async function geocodificarPendentes() {
   prog.style.display = 'none';
   toast(`Geocodificadas: ${ok} ✅  Sem resultado: ${fail}`, ok > 0 ? 'ok' : 'err');
   await carregarLojas();
-  await initMetroDatas();
 }
 
 // ══════════════════════════════════════════
