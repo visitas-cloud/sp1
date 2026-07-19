@@ -589,10 +589,12 @@ function toggleRastreamento(ativo) {
 
 async function recarregarGPS() {
   const btn = document.getElementById('btn-reload-gps');
+  const txt = document.getElementById('gps-reload-txt');
+
   // Anima ícone girando
   btn.classList.add('girando');
-  txt.textContent = 'Reconectando...';
   btn.disabled = true;
+  if (txt) txt.textContent = 'Reconectando...';
 
   // Para GPS se estiver ativo
   if (watchId !== null) {
@@ -603,25 +605,24 @@ async function recarregarGPS() {
   // Aguarda 800ms e reinicia
   await new Promise(r => setTimeout(r, 800));
 
-  // Liga checkbox na tela de Rotas se existir
   const chk = document.getElementById('toggleGPS');
   if (chk) chk.checked = true;
-
   iniciarGPS();
 
-  // Atualiza botão conforme status
+  // Aguarda 2s e atualiza visual
   await new Promise(r => setTimeout(r, 2000));
   btn.classList.remove('girando');
   btn.disabled = false;
 
   if (watchId !== null) {
     btn.classList.add('ativo');
-    txt.textContent = '✓ GPS Ativo';
+    if (txt) txt.textContent = '✓ GPS Ativo';
     setTimeout(() => {
       btn.classList.remove('ativo');
+      if (txt) txt.textContent = 'Recarregar GPS';
     }, 3000);
   } else {
-    txt.textContent = 'Recarregar GPS';
+    if (txt) txt.textContent = 'Recarregar GPS';
   }
 }
 
@@ -862,6 +863,12 @@ async function init() {
   await initMetroDatas();
   await carregarMetro();
   document.getElementById('dtHistorico').value = hoje();
+
+  // Liga GPS automaticamente ao abrir o app
+  const chk = document.getElementById('toggleGPS');
+  if (chk) chk.checked = true;
+  iniciarGPS();
+
   setInterval(carregarLojas, 60000);
 }
 
