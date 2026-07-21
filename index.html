@@ -182,8 +182,8 @@
     /* Grupo por potencial */
     .metro-grupo { margin-bottom: 10px; }
     .metro-grupo-header {
-      display: flex; align-items: center; gap: 8px;
-      padding: 5px 10px; border-radius: 8px 8px 0 0;
+      display: flex; align-items: center; gap: 4px;
+      padding: 5px 8px; border-radius: 8px 8px 0 0;
       font-size: 0.7rem; font-weight: 700; letter-spacing: .04em;
     }
     .metro-grupo-header .meta-txt {
@@ -240,12 +240,7 @@
     }
     .metro-gr { color: var(--navy); }
     .metro-pg { color: #27ae60; }
-    .metro-hdr-cols {
-      font-size: 0.65rem; font-weight: 700; opacity: .85;
-      letter-spacing: .04em; display: flex; gap: 0;
-    }
-    .metro-hdr-gr { min-width: 24px; text-align: center; }
-    .metro-hdr-pg { min-width: 24px; text-align: center; }
+
 
     /* Cores por potencial (grupo header + campos) — conforme tabela visual */
     .mpot-F  { background: #1a1a1a; color: #fff; }
@@ -1389,14 +1384,24 @@ async function carregarMetro() {
   const duPassado = diasUteisPassados(de, ate);
   const proporcao = duTotal > 0 ? duPassado / duTotal : 0;
 
-  // Agrupa lojas por potencial (F→A→0)
+  // Agrupa lojas pela quantidade REAL de gravames (não pelo campo potencial)
   const ordem = ['F','E','D','C','B','A','0'];
   const grupos = {};
   ordem.forEach(p => grupos[p] = []);
 
+  function gravameParaGrupo(gr) {
+    const g = parseInt(gr) || 0;
+    if (g > 30)  return 'F';
+    if (g >= 21) return 'E';
+    if (g >= 11) return 'D';
+    if (g >= 6)  return 'C';
+    if (g >= 2)  return 'B';
+    if (g === 1) return 'A';
+    return '0';
+  }
+
   lojas.forEach(l => {
-    const p = (l.potencial || '0').toString().toUpperCase().trim().charAt(0);
-    const chave = ['A','B','C','D','E','F'].includes(p) ? p : '0';
+    const chave = gravameParaGrupo(l.gravames);
     grupos[chave].push(l);
   });
 
@@ -1414,8 +1419,10 @@ async function carregarMetro() {
     const metaDesc = cfg.meta > 0 ? `Meta: ${cfg.meta} vis.` : 'Sem meta';
     html += `<div class="metro-grupo">
       <div class="metro-grupo-header ${cfg.hdr}">
-        <span>${cfg.label} &nbsp;·&nbsp; ${metaDesc}</span>
-        <span class="metro-hdr-cols"><span class="metro-hdr-gr">Gr</span><span class="metro-hdr-pg">Pg</span></span>
+        <div class="metro-nome" style="color:inherit;font-weight:700">${cfg.label} · ${metaDesc}</div>
+        <div class="metro-barra" style="visibility:hidden"></div>
+        <div class="metro-gr" style="opacity:.85">Gr</div>
+        <div class="metro-pg" style="opacity:.85">Pg</div>
       </div>`;
 
     lista.forEach(l => {
