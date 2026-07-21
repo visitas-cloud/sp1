@@ -242,8 +242,10 @@
     .metro-pg { color: #27ae60; }
     .metro-hdr-cols {
       font-size: 0.65rem; font-weight: 700; opacity: .85;
-      letter-spacing: .04em;
+      letter-spacing: .04em; display: flex; gap: 0;
     }
+    .metro-hdr-gr { min-width: 24px; text-align: center; }
+    .metro-hdr-pg { min-width: 24px; text-align: center; }
 
     /* Cores por potencial (grupo header + campo feito) */
     .mpot-F  { background: #111827; color: #fff; }
@@ -1409,11 +1411,11 @@ async function carregarMetro() {
     lista.sort((a,b) => (a.nome_loja||'').localeCompare(b.nome_loja||''));
 
     // Header do grupo
-    const metaDesc = cfg.meta > 0 ? `Meta: ${cfg.meta} vis./mês` : 'Sem meta';
+    const metaDesc = cfg.meta > 0 ? `Meta: ${cfg.meta} vis.` : 'Sem meta';
     html += `<div class="metro-grupo">
       <div class="metro-grupo-header ${cfg.hdr}">
         <span>${cfg.label} &nbsp;·&nbsp; ${metaDesc}</span>
-        <span class="metro-hdr-cols">Gr&nbsp;&nbsp;Pg</span>
+        <span class="metro-hdr-cols"><span class="metro-hdr-gr">Gr</span><span class="metro-hdr-pg">Pg</span></span>
       </div>`;
 
     lista.forEach(l => {
@@ -1461,8 +1463,8 @@ async function carregarMetro() {
       html += `<div class="metro-row">
         <div class="${nomeClass}" title="${l.nome_loja}">${nomeMetro(l.nome_loja)}</div>
         <div class="metro-barra">${barraHtml}</div>
-        <div class="metro-gr">${gr > 0 ? gr : '—'}</div>
-        <div class="metro-pg">${pg > 0 ? pg : '—'}</div>
+        <div class="metro-gr">${gr}</div>
+        <div class="metro-pg" style="${pg === 0 ? 'color:#e53e3e' : ''}">${pg > 0 ? pg : '0'}</div>
       </div>`;
     });
 
