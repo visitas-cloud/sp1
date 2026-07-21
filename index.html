@@ -192,7 +192,7 @@
 
     /* Linha de loja no metro */
     .metro-row {
-      display: flex; align-items: center; gap: 6px;
+      display: flex; align-items: center; gap: 4px;
       padding: 5px 8px;
       background: var(--surface);
       border-bottom: 1px solid #f0f0f0;
@@ -233,10 +233,16 @@
       to   { width: 100%; }
     }
 
-    /* Contadores */
-    .metro-count {
-      font-size: 0.65rem; font-weight: 700; color: var(--navy);
-      min-width: 32px; text-align: right;
+    /* Colunas Gr e Pg */
+    .metro-gr, .metro-pg {
+      font-size: 0.68rem; font-weight: 700;
+      min-width: 24px; text-align: center;
+    }
+    .metro-gr { color: var(--navy); }
+    .metro-pg { color: #27ae60; }
+    .metro-hdr-cols {
+      font-size: 0.65rem; font-weight: 700; opacity: .85;
+      letter-spacing: .04em;
     }
 
     /* Cores por potencial (grupo header + campo feito) */
@@ -902,6 +908,8 @@ async function carregarLojas() {
     visitada_hoje: !!vmHoje[l.id],
     ultima_visita: vmUltima[l.id] || null,
     total_visitas: vmTotal[l.id] || 0,
+    gravames:       l.gravames || 0,
+    contratos_pagos: l.contratos_pagos || 0,
   }));
 
   renderLista();
@@ -1091,19 +1099,47 @@ function processarArquivo(file) {
       return k ? String(row[k]).trim() : '';
     };
 
-    const dados = rows.map(r => ({
-      dn:               col(r, 'dn', 'DN'),
-      cnpj:             col(r, 'cnpj', 'CNPJ'),
-      nome_loja:        col(r, 'nome_loja', 'NOME DA LOJA', 'NOMELOJA', 'NOME_LOJA'),
-      gcm:              col(r, 'gcm', 'GCM'),
-      nome_responsavel: col(r, 'coordenador', 'COORDENADOR', 'nome_responsavel', 'RESPONSAVEL'),
-      logradouro:       col(r, 'logradouro', 'LOGRADOURO', 'NOME'),
-      numero:           col(r, 'numero', 'NUMERO', 'Nº', 'N°', 'NUM'),
-      bairro:           col(r, 'bairro', 'BAIRRO'),
-      cep:              col(r, 'cep', 'CEP'),
-      zona:             col(r, 'zona', 'ZONA'),
-      potencial:        col(r, 'potencial', 'POTENCIAL'),
-    })).filter(l => l.nome_loja);
+    const dados = rows.map(r => {
+      // Suporte ao novo formato analítico: coluna DEALER = "DN - NOME"
+      const dealer     = col(r, 'DEALER', 'dealer') || '';
+      const dealerMatch = dealer.match(/^(\d+)\s*-\s*(.+)$/);
+      const dnFromDealer   = dealerMatch ? dealerMatch[1].trim() : '';
+      const nomeFromDealer = dealerMatch ? dealerMatch[2].trim() : '';
+
+      // Gravames: coluna D do analítico ou coluna potencial do modelo
+      const gravamesRaw = col(r, 'Gravames Mercado', 'GRAVAMES MERCADO', 'gravames_mercado', 'gravames') || '';
+      const gravames    = parseInt(gravamesRaw) || 0;
+
+      // Potencial calculado pelos gravames (se vier do analítico)
+      let potencialCalc = '';
+      if (gravamesRaw !== '') {
+        if      (gravames >= 21) potencialCalc = 'F';
+        else if (gravames >= 11) potencialCalc = 'E';
+        else if (gravames >= 6)  potencialCalc = 'D';
+        else if (gravames >= 2)  potencialCalc = 'C';
+        else if (gravames === 1) potencialCalc = 'B';
+        else                     potencialCalc = 'A';
+      }
+
+      // Contratos pagos: coluna J
+      const contratosPagos = parseInt(col(r, 'Contratos', 'CONTRATOS', 'contratos_pagos', 'contratos pagos') || '0') || 0;
+
+      return {
+        dn:               dnFromDealer || col(r, 'dn', 'DN'),
+        cnpj:             col(r, 'cnpj', 'CNPJ'),
+        nome_loja:        nomeFromDealer || col(r, 'nome_loja', 'NOME DA LOJA', 'NOMELOJA', 'NOME_LOJA'),
+        gcm:              col(r, 'gcm', 'GCM'),
+        nome_responsavel: col(r, 'coordenador', 'COORDENADOR', 'nome_responsavel', 'RESPONSAVEL'),
+        logradouro:       col(r, 'logradouro', 'LOGRADOURO', 'NOME'),
+        numero:           col(r, 'numero', 'NUMERO', 'Nº', 'N°', 'NUM'),
+        bairro:           col(r, 'bairro', 'BAIRRO'),
+        cep:              col(r, 'cep', 'CEP'),
+        zona:             col(r, 'zona', 'ZONA'),
+        potencial:        col(r, 'potencial', 'POTENCIAL') || potencialCalc,
+        gravames:         gravames || parseInt(col(r, 'gravames', 'GRAVAMES') || '0') || 0,
+        contratos_pagos:  contratosPagos,
+      };
+    }).filter(l => l.nome_loja);
 
     if (!dados.length) return toast('Nenhuma loja encontrada', 'err');
 
@@ -1312,8 +1348,8 @@ async function carregarMetro() {
     const metaDesc = cfg.meta > 0 ? `Meta: ${cfg.meta} vis./mês` : 'Sem meta';
     html += `<div class="metro-grupo">
       <div class="metro-grupo-header ${cfg.hdr}">
-        <span>${cfg.label}</span>
-        <span class="meta-txt">${metaDesc}</span>
+        <span>${cfg.label} &nbsp;·&nbsp; ${metaDesc}</span>
+        <span class="metro-hdr-cols">Gr&nbsp;&nbsp;Pg</span>
       </div>`;
 
     lista.forEach(l => {
@@ -1355,12 +1391,14 @@ async function carregarMetro() {
       }
 
       const nomeClass = atrasado ? 'metro-nome atrasado' : 'metro-nome';
-      const countTxt  = meta > 0 ? `${visitas}/${meta}` : '—';
+      const gr = l.gravames || 0;
+      const pg = l.contratos_pagos || 0;
 
       html += `<div class="metro-row">
         <div class="${nomeClass}" title="${l.nome_loja}">${nomeMetro(l.nome_loja)}</div>
         <div class="metro-barra">${barraHtml}</div>
-        <div class="metro-count">${countTxt}</div>
+        <div class="metro-gr">${gr > 0 ? gr : '—'}</div>
+        <div class="metro-pg">${pg > 0 ? pg : '—'}</div>
       </div>`;
     });
 
