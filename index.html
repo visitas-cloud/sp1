@@ -325,6 +325,50 @@
     .btn-primary { background: var(--green); color: #fff; }
     .btn-danger  { background: var(--red); color: #fff; }
     .btn-outline { background: none; border: 1.5px solid var(--border); color: var(--navy); }
+    .btn-icon {
+      background: none; border: 1.5px solid var(--border); border-radius: 7px;
+      width: 30px; height: 30px; cursor: pointer; font-size: 0.85rem; margin-right: 4px;
+      transition: all .15s;
+    }
+    .btn-icon:hover { background: var(--surface2); border-color: var(--green); }
+
+    /* MODAL */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(13,45,79,0.55);
+      z-index: 200; align-items: center; justify-content: center; padding: 16px;
+    }
+    .modal-overlay.show { display: flex; }
+    .modal-box {
+      background: var(--surface); border-radius: 14px; width: 100%; max-width: 520px;
+      max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow-md);
+    }
+    .modal-head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 20px; border-bottom: 1.5px solid var(--border); position: sticky; top: 0;
+      background: var(--surface); border-radius: 14px 14px 0 0;
+    }
+    .modal-head h3 { margin: 0; color: var(--navy); font-size: 1rem; }
+    .modal-close {
+      background: none; border: none; font-size: 1.1rem; color: var(--dim); cursor: pointer;
+      width: 30px; height: 30px; border-radius: 8px; line-height: 1;
+    }
+    .modal-close:hover { background: var(--surface2); color: var(--navy); }
+    #formLoja { padding: 18px 20px 20px; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .form-group { display: flex; flex-direction: column; gap: 5px; }
+    .form-group-full { grid-column: 1 / -1; }
+    .form-group label { font-size: 0.72rem; font-weight: 600; color: var(--navy); text-transform: uppercase; letter-spacing: .03em; }
+    .form-group input, .form-group select {
+      border: 1.5px solid var(--border); border-radius: 8px; padding: 9px 11px;
+      font-family: var(--font); font-size: 0.86rem; color: var(--text); background: var(--surface);
+    }
+    .form-group input:focus, .form-group select:focus {
+      outline: none; border-color: var(--green); box-shadow: 0 0 0 3px var(--green-soft);
+    }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+    #modalLojaMsg:empty { margin: 0; }
+    #modalLojaMsg { margin-top: 12px; }
+    @media (max-width: 480px) { .form-grid { grid-template-columns: 1fr; } }
 
     /* PROGRESS GEOCODE */
     #geoProgress {
@@ -503,6 +547,7 @@
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
       <h3 style="margin:0">🏪 Lojas cadastradas</h3>
       <div style="display:flex;gap:8px">
+        <button class="btn btn-primary" onclick="abrirModalLoja()">➕ Adicionar Loja</button>
         <button class="btn btn-outline" onclick="geocodificarPendentes()" title="Geocodificar lojas sem coordenadas">📡 Geocodificar</button>
         <button class="btn btn-outline" onclick="exportar()">⬇ Exportar</button>
         <button class="btn btn-danger"  onclick="resetVisitas()" title="Apagar visitas de hoje">🔄 Reset Visitas</button>
@@ -510,6 +555,73 @@
       </div>
     </div>
     <div id="tblLojas"><div class="msg">Carregando...</div></div>
+  </div>
+</div>
+
+<!-- MODAL: ADICIONAR / EDITAR LOJA -->
+<div id="modalLojaOverlay" class="modal-overlay" onclick="if(event.target===this) fecharModalLoja()">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3 id="modalLojaTitulo">➕ Adicionar Loja</h3>
+      <button type="button" class="modal-close" onclick="fecharModalLoja()">✕</button>
+    </div>
+    <form id="formLoja" onsubmit="salvarLoja(event)">
+      <input type="hidden" id="fLojaId" />
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="fDn">DN *</label>
+          <input id="fDn" required placeholder="Ex: 67411" />
+        </div>
+        <div class="form-group">
+          <label for="fCnpj">CNPJ</label>
+          <input id="fCnpj" placeholder="00.000.000/0000-00" />
+        </div>
+        <div class="form-group form-group-full">
+          <label for="fNomeLoja">Nome da Loja *</label>
+          <input id="fNomeLoja" required placeholder="Ex: A.R.G.S AUTOMOVEIS LTDA" />
+        </div>
+        <div class="form-group">
+          <label for="fGcm">GCM</label>
+          <input id="fGcm" placeholder="Nome do GCM" />
+        </div>
+        <div class="form-group">
+          <label for="fResponsavel">Responsável / Coordenador</label>
+          <input id="fResponsavel" placeholder="Nome do responsável" />
+        </div>
+        <div class="form-group form-group-full">
+          <label for="fLogradouro">Logradouro *</label>
+          <input id="fLogradouro" required placeholder="Ex: Av. Marechal Tito" />
+        </div>
+        <div class="form-group">
+          <label for="fNumero">Número</label>
+          <input id="fNumero" placeholder="Ex: 1234" />
+        </div>
+        <div class="form-group">
+          <label for="fCep">CEP</label>
+          <input id="fCep" placeholder="00000-000" />
+        </div>
+        <div class="form-group">
+          <label for="fBairro">Bairro *</label>
+          <input id="fBairro" required placeholder="Ex: Itaim Paulista" />
+        </div>
+        <div class="form-group">
+          <label for="fZona">Zona</label>
+          <select id="fZona">
+            <option value="">Selecione...</option>
+            <option>Zona Norte</option>
+            <option>Zona Sul</option>
+            <option>Zona Leste</option>
+            <option>Zona Oeste</option>
+            <option>Zona Centro</option>
+          </select>
+        </div>
+      </div>
+      <div id="modalLojaMsg"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline" onclick="fecharModalLoja()">Cancelar</button>
+        <button type="submit" class="btn btn-primary" id="btnSalvarLoja">💾 Salvar Loja</button>
+      </div>
+    </form>
   </div>
 </div>
 
@@ -1242,8 +1354,9 @@ async function importar(dados) {
 async function carregarTabelaLojas() {
   const el = document.getElementById('tblLojas');
   el.innerHTML = '<div class="msg">Carregando...</div>';
-  const { data, error } = await sb.from('lojas').select('dn, nome_loja, bairro, zona, latitude, longitude').eq('ativa', true).order('nome_loja');
+  const { data, error } = await sb.from('lojas').select('id, dn, cnpj, nome_loja, gcm, nome_responsavel, logradouro, numero, bairro, cep, zona, latitude, longitude').eq('ativa', true).order('nome_loja');
   if (error) { el.innerHTML = `<div class="msg err">❌ ${error.message}</div>`; return; }
+  window._lojasCache = data || [];
   if (!data?.length) { el.innerHTML = '<div class="msg">Nenhuma loja cadastrada ainda</div>'; return; }
   const semGeo = data.filter(l => !l.latitude).length;
   el.innerHTML = `
@@ -1254,15 +1367,127 @@ async function carregarTabelaLojas() {
       </span>
     </p>
     <div class="table-wrap"><table>
-      <thead><tr><th>DN</th><th>Nome</th><th>Bairro</th><th>Zona</th><th>GPS</th></tr></thead>
+      <thead><tr><th>DN</th><th>Nome</th><th>Bairro</th><th>Zona</th><th>GPS</th><th>Ações</th></tr></thead>
       <tbody>${data.map(l => `
         <tr>
           <td>${l.dn||'—'}</td><td>${l.nome_loja}</td>
           <td>${l.bairro||'—'}</td><td>${l.zona||'—'}</td>
           <td>${l.latitude ? '✅' : '⚠️'}</td>
+          <td style="white-space:nowrap">
+            <button class="btn-icon" title="Editar" onclick="abrirModalLoja('${l.id}')">✏️</button>
+            <button class="btn-icon" title="Excluir" onclick="excluirLoja('${l.id}', '${(l.nome_loja||'').replace(/'/g,"\\'")}')">🗑️</button>
+          </td>
         </tr>`).join('')}
       </tbody>
     </table></div>`;
+}
+
+// ══════════════════════════════════════════
+//  MODAL: ADICIONAR / EDITAR / EXCLUIR LOJA
+// ══════════════════════════════════════════
+function abrirModalLoja(id) {
+  document.getElementById('formLoja').reset();
+  document.getElementById('modalLojaMsg').innerHTML = '';
+  document.getElementById('fLojaId').value = '';
+
+  if (id) {
+    const l = (window._lojasCache || []).find(x => String(x.id) === String(id));
+    if (!l) { toast('Loja não encontrada', 'err'); return; }
+    document.getElementById('modalLojaTitulo').textContent = '✏️ Editar Loja';
+    document.getElementById('fLojaId').value = l.id;
+    document.getElementById('fDn').value = l.dn || '';
+    document.getElementById('fCnpj').value = l.cnpj || '';
+    document.getElementById('fNomeLoja').value = l.nome_loja || '';
+    document.getElementById('fGcm').value = l.gcm || '';
+    document.getElementById('fResponsavel').value = l.nome_responsavel || '';
+    document.getElementById('fLogradouro').value = l.logradouro || '';
+    document.getElementById('fNumero').value = l.numero || '';
+    document.getElementById('fCep').value = l.cep || '';
+    document.getElementById('fBairro').value = l.bairro || '';
+    document.getElementById('fZona').value = l.zona || '';
+  } else {
+    document.getElementById('modalLojaTitulo').textContent = '➕ Adicionar Loja';
+  }
+  document.getElementById('modalLojaOverlay').classList.add('show');
+}
+
+function fecharModalLoja() {
+  document.getElementById('modalLojaOverlay').classList.remove('show');
+}
+
+async function salvarLoja(event) {
+  event.preventDefault();
+  const msg = document.getElementById('modalLojaMsg');
+  const btn = document.getElementById('btnSalvarLoja');
+  const id  = document.getElementById('fLojaId').value;
+
+  const loja = {
+    dn:               document.getElementById('fDn').value.trim(),
+    cnpj:             document.getElementById('fCnpj').value.trim(),
+    nome_loja:        document.getElementById('fNomeLoja').value.trim(),
+    gcm:              document.getElementById('fGcm').value.trim(),
+    nome_responsavel: document.getElementById('fResponsavel').value.trim(),
+    logradouro:       document.getElementById('fLogradouro').value.trim(),
+    numero:           document.getElementById('fNumero').value.trim(),
+    bairro:           document.getElementById('fBairro').value.trim(),
+    cep:              document.getElementById('fCep').value.trim(),
+    zona:             document.getElementById('fZona').value,
+    ativa:            true,
+  };
+
+  if (!loja.dn || !loja.nome_loja || !loja.logradouro || !loja.bairro) {
+    msg.innerHTML = '<div class="msg err">❌ Preencha DN, Nome da Loja, Logradouro e Bairro</div>';
+    return;
+  }
+
+  btn.disabled = true;
+  msg.innerHTML = '<div class="msg">⏳ Salvando...</div>';
+
+  let error, savedId = id;
+  if (id) {
+    // EDIÇÃO: atualiza pelo id
+    ({ error } = await sb.from('lojas').update(loja).eq('id', id));
+  } else {
+    // NOVA LOJA: upsert pelo DN (atualiza se DN já existir, senão insere)
+    const { data, error: errIns } = await sb.from('lojas')
+      .upsert(loja, { onConflict: 'dn', ignoreDuplicates: false })
+      .select('id')
+      .single();
+    error = errIns;
+    if (data) savedId = data.id;
+  }
+
+  if (error) {
+    msg.innerHTML = `<div class="msg err">❌ Erro: ${error.message}</div>`;
+    btn.disabled = false;
+    return;
+  }
+
+  toast(id ? 'Loja atualizada ✅' : 'Loja cadastrada ✅', 'ok');
+  fecharModalLoja();
+  btn.disabled = false;
+  await carregarTabelaLojas();
+  await carregarLojas();
+
+  // Geocodifica automaticamente o endereço da loja recém salva
+  if (savedId) {
+    const coord = await geocodificarEndereco(loja.logradouro, loja.numero, loja.bairro, loja.cep);
+    if (coord) {
+      await sb.from('lojas').update({ latitude: coord.lat, longitude: coord.lon }).eq('id', savedId);
+      await carregarTabelaLojas();
+      await carregarLojas();
+    }
+  }
+}
+
+async function excluirLoja(id, nome) {
+  if (!confirm(`Excluir a loja "${nome}"?\n\nA loja sairá da lista, mas o histórico de visitas é mantido.`)) return;
+  // Soft delete: marca como inativa (mesmo padrão usado no restante do sistema)
+  const { error } = await sb.from('lojas').update({ ativa: false }).eq('id', id);
+  if (error) return toast('Erro ao excluir: ' + error.message, 'err');
+  toast('Loja excluída ✅', 'ok');
+  await carregarTabelaLojas();
+  await carregarLojas();
 }
 
 async function resetVisitas() {
@@ -1417,12 +1642,22 @@ async function carregarMetro() {
 
     // Header do grupo
     const metaDesc = cfg.meta > 0 ? `Meta: ${cfg.meta} vis.` : 'Sem meta';
+    // Totais do grupo
+    const totalGr = lista.reduce((s, l) => s + (parseInt(l.gravames) || 0), 0);
+    const totalPg = lista.reduce((s, l) => s + (parseInt(l.contratos_pagos) || 0), 0);
+
     html += `<div class="metro-grupo">
       <div class="metro-grupo-header ${cfg.hdr}">
         <div class="metro-nome" style="color:inherit;font-weight:700">${cfg.label} · ${metaDesc}</div>
         <div class="metro-barra" style="visibility:hidden"></div>
-        <div class="metro-gr" style="color:inherit;opacity:.9">Gr</div>
-        <div class="metro-pg" style="color:inherit;opacity:.9">Pg</div>
+        <div class="metro-gr" style="color:inherit;text-align:center">
+          <div style="font-size:0.52rem;opacity:.8;line-height:1.1">Gr</div>
+          <div style="font-size:0.78rem;font-weight:800;line-height:1.2">${totalGr}</div>
+        </div>
+        <div class="metro-pg" style="color:inherit;text-align:center">
+          <div style="font-size:0.52rem;opacity:.8;line-height:1.1">Pg</div>
+          <div style="font-size:0.78rem;font-weight:800;line-height:1.2">${totalPg}</div>
+        </div>
       </div>`;
 
     lista.forEach(l => {
