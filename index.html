@@ -428,6 +428,21 @@
       width: 130px;
     }
     .regiao-inline:focus { outline: none; border-color: var(--green); box-shadow: 0 0 0 3px var(--green-soft); }
+    .regiao-item-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+    .regiao-move-btn {
+      width: 22px; height: 22px; border-radius: 6px; border: 1.5px solid var(--border);
+      background: #fff; color: var(--dim); font-size: 0.72rem; line-height: 1; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .regiao-move-btn:hover { background: var(--surface2); border-color: var(--navy); color: var(--navy); }
+    .regiao-move-opcao {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      padding: 9px 12px; border: 1.5px solid var(--border); border-radius: 8px; cursor: pointer;
+      font-size: 0.82rem; background: #fff; text-align: left;
+    }
+    .regiao-move-opcao:hover { border-color: var(--green); background: var(--green-pale); }
+    .regiao-move-opcao.atual { border-color: var(--green); background: var(--green-pale); font-weight: 700; }
+    .regiao-move-opcao .qtd { font-size: 0.68rem; color: var(--dim); font-weight: 500; }
 
     /* CONFIG GPS */
     .gps-config { display: flex; align-items: center; gap: 10px; background: var(--surface2); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 14px; font-size: 0.82rem; }
@@ -665,6 +680,26 @@
         <button type="submit" class="btn btn-primary" id="btnSalvarLoja">💾 Salvar Loja</button>
       </div>
     </form>
+  </div>
+</div>
+
+<!-- MODAL: MOVER LOJA PARA OUTRA REGIÃO -->
+<div id="modalMoverOverlay" class="modal-overlay" onclick="if(event.target===this) fecharModalMover()">
+  <div class="modal-box" style="max-width:380px">
+    <div class="modal-head">
+      <h3 id="modalMoverTitulo">⇄ Mover loja</h3>
+      <button type="button" class="modal-close" onclick="fecharModalMover()">✕</button>
+    </div>
+    <div style="padding:16px 20px 20px">
+      <p style="font-size:0.78rem;color:var(--dim);margin-bottom:14px">
+        Escolha a região de destino para <strong id="modalMoverNomeLoja"></strong>:
+      </p>
+      <div id="modalMoverLista" style="display:flex;flex-direction:column;gap:6px;max-height:260px;overflow-y:auto"></div>
+      <div style="display:flex;gap:8px;margin-top:14px">
+        <input id="modalMoverNovaRegiao" placeholder="+ Nova região (ex: Marechal Tito 5)" style="flex:1;border:1.5px solid var(--border);border-radius:8px;padding:9px 11px;font-family:var(--font);font-size:0.82rem" />
+        <button class="btn btn-primary" onclick="confirmarNovaRegiao()">Criar</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1937,7 +1972,10 @@ async function carregarRegioes() {
     const dica = `${l.nome_loja}${l.ultima_visita ? ' · última visita: ' + new Date(l.ultima_visita).toLocaleDateString('pt-BR') : ' · ainda não visitada'}`;
     return `<div class="regiao-item" title="${dica}">
       <span class="regiao-nome">${l.nome_loja}</span>
-      <span class="regiao-box ${l.visitada_hoje ? 'visitada' : ''}"></span>
+      <div class="regiao-item-actions">
+        <span class="regiao-box ${l.visitada_hoje ? 'visitada' : ''}"></span>
+        <button type="button" class="regiao-move-btn" title="Mover para outra região" onclick="abrirModalMover('${l.id}')">⇄</button>
+      </div>
     </div>`;
   }
 
@@ -1989,6 +2027,77 @@ function filtrarRegioes() {
     .join('');
 
   corpo.innerHTML = filtrado || '<div class="msg">Nenhum resultado encontrado</div>';
+}
+
+// ══════════════════════════════════════════
+//  MOVER LOJA PARA OUTRA REGIÃO (ajuste manual)
+// ══════════════════════════════════════════
+let _moverLojaId = null;
+
+function abrirModalMover(lojaId) {
+  const loja = lojas.find(l => l.id === lojaId);
+  if (!loja) { toast('Loja não encontrada', 'err'); return; }
+  _moverLojaId = lojaId;
+
+  document.getElementById('modalMoverNomeLoja').textContent = loja.nome_loja;
+  document.getElementById('modalMoverNovaRegiao').value = '';
+
+  // Conta quantas lojas cada região já tem, pra mostrar na lista
+  const contagem = {};
+  lojas.forEach(l => {
+    const r = (l.regiao || '').trim();
+    if (r) contagem[r] = (contagem[r] || 0) + 1;
+  });
+  const regiaoAtual = (loja.regiao || '').trim();
+  const nomes = ordenarRegioes(Object.keys(contagem));
+
+  const listaEl = document.getElementById('modalMoverLista');
+  let html = '';
+
+  html += `<button type="button" class="regiao-move-opcao ${!regiaoAtual ? 'atual' : ''}" onclick="moverLojaParaRegiao('${lojaId}', '')">
+    <span>🗂 Sem região</span>
+  </button>`;
+
+  nomes.forEach(nome => {
+    const ehAtual = nome === regiaoAtual;
+    html += `<button type="button" class="regiao-move-opcao ${ehAtual ? 'atual' : ''}" onclick="moverLojaParaRegiao('${lojaId}', '${nome.replace(/'/g,"\\'")}')">
+      <span>🏷 ${nome}</span>
+      <span class="qtd">${contagem[nome]} loja${contagem[nome]!==1?'s':''}</span>
+    </button>`;
+  });
+
+  listaEl.innerHTML = html;
+  document.getElementById('modalMoverOverlay').classList.add('show');
+}
+
+function fecharModalMover() {
+  document.getElementById('modalMoverOverlay').classList.remove('show');
+  _moverLojaId = null;
+}
+
+function confirmarNovaRegiao() {
+  const nome = document.getElementById('modalMoverNovaRegiao').value.trim();
+  if (!nome) { toast('Digite o nome da nova região', 'err'); return; }
+  if (!_moverLojaId) return;
+  moverLojaParaRegiao(_moverLojaId, nome);
+}
+
+async function moverLojaParaRegiao(lojaId, novaRegiao) {
+  const { error } = await sb.from('lojas').update({ regiao: novaRegiao }).eq('id', lojaId);
+  if (error) {
+    toast('Erro ao mover: ' + error.message, 'err');
+    return;
+  }
+
+  // Atualiza os caches locais sem precisar recarregar tudo do banco
+  const l1 = lojas.find(l => l.id === lojaId);
+  if (l1) l1.regiao = novaRegiao;
+  const l2 = (window._lojasCache || []).find(l => String(l.id) === String(lojaId));
+  if (l2) l2.regiao = novaRegiao;
+
+  toast(novaRegiao ? `Movida para "${novaRegiao}" ✅` : 'Removida da região ✅', 'ok');
+  fecharModalMover();
+  await carregarRegioes(); // blocos com 0 lojas somem sozinhos daqui
 }
 
 // Cria as regiões automaticamente agrupando lojas próximas (por distância GPS real)
