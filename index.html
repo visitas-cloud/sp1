@@ -406,29 +406,28 @@
     .msg { text-align: center; padding: 36px 20px; color: var(--dim); font-size: 0.85rem; }
     .msg.err { color: var(--red); }
 
-    /* GRUPOS DE LOJAS */
-    .grupo-card { padding: 0; overflow: hidden; }
-    .grupo-header {
-      padding: 14px 16px; background: var(--surface2); border-bottom: 1.5px solid var(--border);
+    /* REGIÃO */
+    .regiao-card-title { text-align: center; font-weight: 800; font-size: 1.25rem; color: #111; margin: 22px 0 10px; }
+    .regiao-card-title:first-child { margin-top: 4px; }
+    .regiao-card { border: 2.5px solid #111; border-radius: 12px; padding: 18px 20px; background: #fff; margin-bottom: 6px; }
+    .regiao-sub { font-size: 0.72rem; color: var(--dim); margin-bottom: 12px; font-weight: 600; }
+    .regiao-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px 18px; }
+    .regiao-item { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .regiao-nome {
+      color: #e53e3e; font-weight: 700; font-size: 0.8rem;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
-    .grupo-header h3 { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
-    .grupo-count {
-      font-size: 0.65rem; font-weight: 700; color: var(--navy); background: var(--green-pale);
-      border: 1px solid var(--border); padding: 2px 8px; border-radius: 20px; text-transform: none;
+    .regiao-box {
+      width: 38px; height: 24px; border-radius: 6px; background: #e5e5e5; border: 1.5px solid #ccc;
+      flex-shrink: 0; transition: all .2s;
     }
-    .grupo-mini-stats { display: flex; gap: 14px; flex-wrap: wrap; font-size: 0.74rem; color: var(--dim); }
-    .grupo-mini-stats strong { color: var(--navy); }
-    .grupo-card .table-wrap { border: none; border-radius: 0; }
-    .grupo-card table { font-size: 0.78rem; }
-    .grupo-card td, .grupo-card th { padding: 8px 12px; }
-
-    /* SELECT/INPUT DE GRUPO NA TABELA DE CONFIGURAÇÕES */
-    .grupo-inline {
+    .regiao-box.visitada { background: var(--green); border-color: var(--green); }
+    .regiao-inline {
       border: 1.5px solid var(--border); border-radius: 6px; padding: 5px 8px;
       font-family: var(--font); font-size: 0.76rem; color: var(--text); background: var(--surface);
-      width: 100px;
+      width: 130px;
     }
-    .grupo-inline:focus { outline: none; border-color: var(--green); box-shadow: 0 0 0 3px var(--green-soft); }
+    .regiao-inline:focus { outline: none; border-color: var(--green); box-shadow: 0 0 0 3px var(--green-soft); }
 
     /* CONFIG GPS */
     .gps-config { display: flex; align-items: center; gap: 10px; background: var(--surface2); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 14px; font-size: 0.82rem; }
@@ -466,9 +465,10 @@
       <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
     </svg>
   </button>
-  <button onclick="showPage('grupos')" id="nav-grupos" title="Grupos de Lojas">
+  <button onclick="showPage('regiao')" id="nav-regiao" title="Região">
     <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
+      <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a2 2 0 01-2.828 0l-4.243-4.243a8 8 0 1111.314 0z"/>
+      <circle cx="12" cy="11" r="3" stroke="currentColor" stroke-width="1.7"/>
     </svg>
   </button>
   <button onclick="showPage('painel')" id="nav-painel" title="Painel">
@@ -526,21 +526,20 @@
   <div id="metro-corpo"></div>
 </div>
 
-<!-- GRUPOS DE LOJAS -->
-<div class="page" id="page-grupos">
-  <div class="metro-controls">
-    <div class="metro-periodo">
-      <label>De</label>
-      <input type="date" id="grupoDe" />
-      <label>Até</label>
-      <input type="date" id="grupoAte" />
-      <button class="btn btn-green" onclick="carregarGrupos()">Ver</button>
+<!-- REGIÃO -->
+<div class="page" id="page-regiao">
+  <div class="card" style="margin-bottom:12px">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+      <button class="btn btn-primary" onclick="autoAgruparRegioes()" title="Cria as regiões automaticamente com base na proximidade dos endereços já geocodificados">🧭 Montar Regiões Automaticamente</button>
+      <button class="btn btn-outline" onclick="carregarRegioes()">🔄 Atualizar</button>
     </div>
+    <p style="font-size:0.72rem;color:var(--dim);margin-top:8px">
+      Agrupa as lojas próximas entre si (por distância real do GPS) e nomeia cada bloco com a rua mais comum do grupo. Você pode ajustar manualmente depois na aba Painel.
+    </p>
   </div>
-  <input class="search-bar" type="text" placeholder="🔍 Buscar grupo ou loja..." oninput="filtrarGrupos()" id="buscaGrupo" />
-  <div id="grupos-corpo"><div class="msg">Carregando...</div></div>
+  <input class="search-bar" type="text" placeholder="🔍 Buscar loja ou região..." oninput="filtrarRegioes()" id="buscaRegiao" />
+  <div id="regiao-corpo"><div class="msg">Carregando...</div></div>
 </div>
-
 <div class="page" id="page-historico">
   <div class="card">
     <div style="display:flex;gap:10px;align-items:center">
@@ -659,11 +658,6 @@
             <option>Zona Centro</option>
           </select>
         </div>
-        <div class="form-group">
-          <label for="fGrupo">Grupo</label>
-          <input id="fGrupo" list="gruposListModal" placeholder="Ex: Grupo 1" />
-          <datalist id="gruposListModal"></datalist>
-        </div>
       </div>
       <div id="modalLojaMsg"></div>
       <div class="modal-actions">
@@ -742,10 +736,7 @@ function showPage(name) {
     if (!document.getElementById('metroDe').value) initMetroDatas().then(carregarMetro);
     else carregarMetro();
   }
-  if (name === 'grupos') {
-    if (!document.getElementById('grupoDe').value) initGruposDatas().then(carregarGrupos);
-    else carregarGrupos();
-  }
+  if (name === 'regiao') carregarRegioes();
 }
 
 function hoje() { return new Date().toISOString().split('T')[0]; }
@@ -1090,11 +1081,11 @@ async function carregarLojas() {
 
   renderLista();
 
-  // Se metro ou grupos estiverem abertos, recarrega também
+  // Se metro ou região estiverem abertos, recarrega também
   const metroAtivo  = document.getElementById('page-metro')?.classList.contains('active');
-  const gruposAtivo = document.getElementById('page-grupos')?.classList.contains('active');
+  const regiaoAtivo = document.getElementById('page-regiao')?.classList.contains('active');
   if (metroAtivo)  carregarMetro();
-  if (gruposAtivo) carregarGrupos();
+  if (regiaoAtivo) carregarRegioes();
 }
 
 function renderStats() { /* stats removidos */ }
@@ -1409,18 +1400,17 @@ async function importar(dados) {
 async function carregarTabelaLojas() {
   const el = document.getElementById('tblLojas');
   el.innerHTML = '<div class="msg">Carregando...</div>';
-  const { data, error } = await sb.from('lojas').select('id, dn, cnpj, nome_loja, gcm, nome_responsavel, logradouro, numero, bairro, cep, zona, grupo, latitude, longitude').eq('ativa', true).order('nome_loja');
+  const { data, error } = await sb.from('lojas').select('id, dn, cnpj, nome_loja, gcm, nome_responsavel, logradouro, numero, bairro, cep, zona, regiao, latitude, longitude').eq('ativa', true).order('nome_loja');
   if (error) {
-    el.innerHTML = `<div class="msg err">❌ ${error.message}${error.message?.includes('grupo') ? '<br><small>Peça para adicionar a coluna "grupo" (tipo texto) na tabela "lojas" no Supabase.</small>' : ''}</div>`;
+    el.innerHTML = `<div class="msg err">❌ ${error.message}${error.message?.includes('regiao') ? '<br><small>Peça para adicionar a coluna "regiao" (tipo texto) na tabela "lojas" no Supabase.</small>' : ''}</div>`;
     return;
   }
   window._lojasCache = data || [];
   if (!data?.length) { el.innerHTML = '<div class="msg">Nenhuma loja cadastrada ainda</div>'; return; }
   const semGeo = data.filter(l => !l.latitude).length;
 
-  // Sugestões de grupo: valores já usados + "Grupo 1".."Grupo 5" como ponto de partida
-  const gruposExistentes = [...new Set(data.map(l => (l.grupo||'').trim()).filter(Boolean))];
-  const sugestoes = [...new Set([...gruposExistentes, 'Grupo 1','Grupo 2','Grupo 3','Grupo 4','Grupo 5'])];
+  // Sugestões de região: valores já usados
+  const regioesExistentes = [...new Set(data.map(l => (l.regiao||'').trim()).filter(Boolean))];
 
   el.innerHTML = `
     <p style="font-size:0.78rem;color:var(--dim);margin-bottom:10px">
@@ -1429,16 +1419,16 @@ async function carregarTabelaLojas() {
         ${semGeo ? `⚠️ ${semGeo} sem coordenadas GPS — clique "Geocodificar"` : '✅ Todas geocodificadas'}
       </span>
     </p>
-    <datalist id="gruposList">${sugestoes.map(g => `<option value="${g}"></option>`).join('')}</datalist>
+    <datalist id="regioesList">${regioesExistentes.map(r => `<option value="${r}"></option>`).join('')}</datalist>
     <div class="table-wrap"><table>
-      <thead><tr><th>DN</th><th>Nome</th><th>Bairro</th><th>Zona</th><th>Grupo</th><th>GPS</th><th>Ações</th></tr></thead>
+      <thead><tr><th>DN</th><th>Nome</th><th>Bairro</th><th>Zona</th><th>Região</th><th>GPS</th><th>Ações</th></tr></thead>
       <tbody>${data.map(l => `
         <tr>
           <td>${l.dn||'—'}</td><td>${l.nome_loja}</td>
           <td>${l.bairro||'—'}</td><td>${l.zona||'—'}</td>
           <td>
-            <input class="grupo-inline" list="gruposList" value="${l.grupo||''}" placeholder="Ex: Grupo 1"
-              onchange="mudarGrupoLoja('${l.id}', this.value, this)" />
+            <input class="regiao-inline" list="regioesList" value="${l.regiao||''}" placeholder="Ex: Marechal Tito 1"
+              onchange="mudarRegiaoLoja('${l.id}', this.value)" />
           </td>
           <td>${l.latitude ? '✅' : '⚠️'}</td>
           <td style="white-space:nowrap">
@@ -1450,16 +1440,17 @@ async function carregarTabelaLojas() {
     </table></div>`;
 }
 
-async function mudarGrupoLoja(id, valor, inputEl) {
-  const grupo = (valor||'').trim();
-  const { error } = await sb.from('lojas').update({ grupo }).eq('id', id);
-  if (error) { toast('Erro ao salvar grupo: ' + error.message, 'err'); return; }
-  // Atualiza o cache local sem precisar recarregar a tabela toda
+async function mudarRegiaoLoja(id, valor) {
+  const regiao = (valor||'').trim();
+  const { error } = await sb.from('lojas').update({ regiao }).eq('id', id);
+  if (error) { toast('Erro ao salvar região: ' + error.message, 'err'); return; }
   const l = (window._lojasCache||[]).find(x => String(x.id) === String(id));
-  if (l) l.grupo = grupo;
+  if (l) l.regiao = regiao;
   const lojaMem = lojas.find(x => x.id === id);
-  if (lojaMem) lojaMem.grupo = grupo;
-  toast('Grupo atualizado ✅', 'ok');
+  if (lojaMem) lojaMem.regiao = regiao;
+  toast('Região atualizada ✅', 'ok');
+  const regiaoAtivo = document.getElementById('page-regiao')?.classList.contains('active');
+  if (regiaoAtivo) carregarRegioes();
 }
 
 // ══════════════════════════════════════════
@@ -1469,10 +1460,6 @@ function abrirModalLoja(id) {
   document.getElementById('formLoja').reset();
   document.getElementById('modalLojaMsg').innerHTML = '';
   document.getElementById('fLojaId').value = '';
-
-  // Popula sugestões de grupo com base no que já existe cadastrado
-  const gruposExistentes = [...new Set((window._lojasCache||[]).map(l => (l.grupo||'').trim()).filter(Boolean))];
-  document.getElementById('gruposListModal').innerHTML = gruposExistentes.map(g => `<option value="${g}"></option>`).join('');
 
   if (id) {
     const l = (window._lojasCache || []).find(x => String(x.id) === String(id));
@@ -1489,7 +1476,6 @@ function abrirModalLoja(id) {
     document.getElementById('fCep').value = l.cep || '';
     document.getElementById('fBairro').value = l.bairro || '';
     document.getElementById('fZona').value = l.zona || '';
-    document.getElementById('fGrupo').value = l.grupo || '';
   } else {
     document.getElementById('modalLojaTitulo').textContent = '➕ Adicionar Loja';
   }
@@ -1517,7 +1503,6 @@ async function salvarLoja(event) {
     bairro:           document.getElementById('fBairro').value.trim(),
     cep:              document.getElementById('fCep').value.trim(),
     zona:             document.getElementById('fZona').value,
-    grupo:            document.getElementById('fGrupo').value.trim(),
     ativa:            true,
   };
 
@@ -1866,7 +1851,7 @@ async function metroMarcar(lojaId, el) {
   if (error) { toast('Erro ao marcar: ' + error.message, 'err'); return; }
 
   toast('✅ Visita marcada!', 'ok');
-  await carregarMetro(); // recarrega a tela metro
+  await carregarLojas(); // recarrega lojas (atualiza status "hoje") e a tela ativa (Metro/Região)
 }
 
 async function metroDesmarcar(lojaId, de, ate, el) {
@@ -1885,7 +1870,7 @@ async function metroDesmarcar(lojaId, de, ate, el) {
   if (error) { toast('Erro ao desmarcar: ' + error.message, 'err'); return; }
 
   toast('↩ Visita removida', 'ok');
-  await carregarMetro();
+  await carregarLojas();
 }
 
 async function limpar() {
@@ -1906,127 +1891,96 @@ async function exportar() {
 }
 
 // ══════════════════════════════════════════
-//  GRUPOS DE LOJAS
+//  REGIÃO — blocos por proximidade geográfica
 // ══════════════════════════════════════════
-async function initGruposDatas() {
-  const hoje_ = new Date();
-  const y = hoje_.getFullYear(), m = String(hoje_.getMonth()+1).padStart(2,'0');
-  const ultimo = new Date(y, hoje_.getMonth()+1, 0).getDate();
-  document.getElementById('grupoDe').value  = `${y}-${m}-01`;
-  document.getElementById('grupoAte').value = `${y}-${m}-${String(ultimo).padStart(2,'0')}`;
-}
 
-// Ordena nomes de grupo: "Grupo 1" < "Grupo 2" < ... < texto livre (alfabético) < "Sem grupo" sempre por último
-function ordenarGrupos(nomes) {
+// Ordena os nomes de região: agrupa pelo "nome base" (sem número no final) em ordem
+// alfabética, e dentro do mesmo nome base ordena pelo número (Marechal Tito 1, 2, 3...)
+function ordenarRegioes(nomes) {
   return nomes.sort((a, b) => {
-    if (a === '__sem_grupo__') return 1;
-    if (b === '__sem_grupo__') return -1;
-    const na = parseInt((a.match(/\d+/) || [])[0]);
-    const nb = parseInt((b.match(/\d+/) || [])[0]);
-    if (!isNaN(na) && !isNaN(nb) && na !== nb) return na - nb;
+    const numA = parseInt((a.match(/(\d+)\s*$/) || [])[1]);
+    const numB = parseInt((b.match(/(\d+)\s*$/) || [])[1]);
+    const baseA = a.replace(/\d+\s*$/, '').trim();
+    const baseB = b.replace(/\d+\s*$/, '').trim();
+    if (baseA !== baseB) return baseA.localeCompare(baseB, 'pt-BR');
+    if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
     return a.localeCompare(b, 'pt-BR');
   });
 }
 
-let _gruposCache = []; // guarda o último HTML montado por grupo, pra filtrar sem reconsultar
+let _regioesCache = []; // guarda o HTML já montado de cada bloco, pra filtrar sem reconsultar
 
-async function carregarGrupos() {
-  const de  = document.getElementById('grupoDe').value;
-  const ate = document.getElementById('grupoAte').value;
-  const corpo = document.getElementById('grupos-corpo');
-  if (!de || !ate) { toast('Selecione o período', 'err'); return; }
+async function carregarRegioes() {
+  const corpo = document.getElementById('regiao-corpo');
   corpo.innerHTML = '<div class="msg">Carregando...</div>';
 
-  // Garante que as lojas (com visitada_hoje/ultima_visita/total_visitas) já estão carregadas
   if (!lojas.length) await carregarLojas();
+  if (!lojas.length) { corpo.innerHTML = '<div class="msg">Nenhuma loja cadastrada</div>'; return; }
 
-  // Visitas no período selecionado
-  const { data: vsData, error } = await sb.from('visitas').select('loja_id')
-    .gte('visitada_em', de + 'T00:00:00').lte('visitada_em', ate + 'T23:59:59');
+  const comRegiao = lojas.filter(l => (l.regiao || '').trim());
+  const semRegiao = lojas.filter(l => !(l.regiao || '').trim());
 
-  if (error) {
-    // Provável causa: a coluna "grupo" ainda não existe na tabela lojas
-    corpo.innerHTML = `<div class="msg err">❌ ${error.message}<br><small>Se o erro mencionar a coluna "grupo", peça para adicioná-la na tabela "lojas" no Supabase.</small></div>`;
+  if (!comRegiao.length) {
+    corpo.innerHTML = `<div class="msg">Nenhuma loja tem região definida ainda.<br>Clique em "🧭 Montar Regiões Automaticamente" acima, ou defina manualmente na aba Painel.</div>`;
+    _regioesCache = [];
     return;
   }
 
-  const vmCount = {};
-  (vsData || []).forEach(v => { vmCount[v.loja_id] = (vmCount[v.loja_id] || 0) + 1; });
-
-  // Agrupa as lojas pelo campo "grupo" (configurado na aba Painel)
   const grupos = {};
-  lojas.forEach(l => {
-    const g = (l.grupo || '').toString().trim() || '__sem_grupo__';
-    if (!grupos[g]) grupos[g] = [];
-    grupos[g].push(l);
+  comRegiao.forEach(l => {
+    const r = l.regiao.trim();
+    if (!grupos[r]) grupos[r] = [];
+    grupos[r].push(l);
   });
 
-  const nomesGrupos = ordenarGrupos(Object.keys(grupos));
+  function montaItem(l) {
+    const dica = `${l.nome_loja}${l.ultima_visita ? ' · última visita: ' + new Date(l.ultima_visita).toLocaleDateString('pt-BR') : ' · ainda não visitada'}`;
+    return `<div class="regiao-item" title="${dica}">
+      <span class="regiao-nome">${l.nome_loja}</span>
+      <span class="regiao-box ${l.visitada_hoje ? 'visitada' : ''}"></span>
+    </div>`;
+  }
 
-  if (!nomesGrupos.length) { corpo.innerHTML = '<div class="msg">Nenhuma loja cadastrada</div>'; return; }
-
-  _gruposCache = nomesGrupos.map(g => {
-    const lista = grupos[g].slice().sort((a,b) => (a.nome_loja||'').localeCompare(b.nome_loja||''));
-    const label        = g === '__sem_grupo__' ? '🗂 Sem grupo' : `🏷 ${g}`;
-    const totalLojas    = lista.length;
-    const visitadasHoje  = lista.filter(l => l.visitada_hoje).length;
-    const visitasPeriodo = lista.reduce((s,l) => s + (vmCount[l.id]||0), 0);
-    const cobertas       = lista.filter(l => (vmCount[l.id]||0) > 0).length;
-    const cobertura      = totalLojas ? Math.round(cobertas/totalLojas*100) : 0;
-
-    const linhas = lista.map(l => {
-      const vp     = vmCount[l.id] || 0;
-      const ultima = l.ultima_visita ? new Date(l.ultima_visita).toLocaleDateString('pt-BR') : '—';
-      return `<tr data-busca="${(l.nome_loja||'').toLowerCase()} ${(l.bairro||'').toLowerCase()} ${g.toLowerCase()}">
-        <td>${l.nome_loja}</td>
-        <td>${l.bairro||'—'}</td>
-        <td>${l.zona||'—'}</td>
-        <td style="text-align:center">${vp}</td>
-        <td>${ultima}</td>
-        <td style="text-align:center">${l.visitada_hoje ? '✅' : '—'}</td>
-      </tr>`;
-    }).join('');
-
+  function montaBloco(nome, lista, corTitulo) {
+    const ordenada = lista.slice().sort((a,b) => (a.nome_loja||'').localeCompare(b.nome_loja||''));
+    const visitadasHoje = ordenada.filter(l => l.visitada_hoje).length;
     return {
-      chave: g.toLowerCase(),
-      html: `<div class="card grupo-card" data-grupo-key="${g.toLowerCase()}">
-        <div class="grupo-header">
-          <h3>${label} <span class="grupo-count">${totalLojas} loja${totalLojas!==1?'s':''}</span></h3>
-          <div class="grupo-mini-stats">
-            <span title="Visitadas hoje">📍 Hoje: <strong>${visitadasHoje}/${totalLojas}</strong></span>
-            <span title="Cobertura no período">📅 Período: <strong>${cobertas}/${totalLojas}</strong> (${cobertura}%)</span>
-            <span title="Total de visitas no período">🔁 Visitas: <strong>${visitasPeriodo}</strong></span>
-          </div>
-        </div>
-        <div class="table-wrap"><table>
-          <thead><tr><th>Loja</th><th>Bairro</th><th>Zona</th><th>Visitas período</th><th>Última visita</th><th>Hoje</th></tr></thead>
-          <tbody>${linhas}</tbody>
-        </table></div>
-      </div>`
+      chave: nome.toLowerCase(),
+      html: `<div class="regiao-card-title"${corTitulo ? ` style="color:${corTitulo}"` : ''}>${nome}</div>
+        <div class="regiao-card"${corTitulo ? ` style="border-color:var(--border)"` : ''}>
+          <div class="regiao-sub">${visitadasHoje}/${ordenada.length} visitadas hoje</div>
+          <div class="regiao-grid">${ordenada.map(montaItem).join('')}</div>
+        </div>`
     };
-  });
+  }
 
-  corpo.innerHTML = _gruposCache.map(g => g.html).join('');
+  const nomes = ordenarRegioes(Object.keys(grupos));
+  _regioesCache = nomes.map(nome => montaBloco(nome, grupos[nome]));
+
+  if (semRegiao.length) {
+    _regioesCache.push(montaBloco('Sem região definida', semRegiao, 'var(--dim)'));
+  }
+
+  corpo.innerHTML = _regioesCache.map(b => b.html).join('');
 }
 
-function filtrarGrupos() {
-  const q = document.getElementById('buscaGrupo').value.toLowerCase().trim();
-  const corpo = document.getElementById('grupos-corpo');
-  if (!_gruposCache.length) return;
+function filtrarRegioes() {
+  const q = document.getElementById('buscaRegiao').value.toLowerCase().trim();
+  const corpo = document.getElementById('regiao-corpo');
+  if (!_regioesCache.length) return;
 
-  if (!q) { corpo.innerHTML = _gruposCache.map(g => g.html).join(''); return; }
+  if (!q) { corpo.innerHTML = _regioesCache.map(b => b.html).join(''); return; }
 
-  const filtrado = _gruposCache
-    .map(g => {
-      if (g.chave.includes(q)) return g.html; // busca por nome do grupo → mostra o grupo inteiro
-      // busca por loja/bairro → filtra as linhas dentro do grupo
+  const filtrado = _regioesCache
+    .map(b => {
+      if (b.chave.includes(q)) return b.html;
       const wrap = document.createElement('div');
-      wrap.innerHTML = g.html;
-      const linhas = wrap.querySelectorAll('tbody tr');
+      wrap.innerHTML = b.html;
+      const itens = wrap.querySelectorAll('.regiao-item');
       let alguma = false;
-      linhas.forEach(tr => {
-        const ok = (tr.dataset.busca || '').includes(q);
-        tr.style.display = ok ? '' : 'none';
+      itens.forEach(it => {
+        const ok = (it.getAttribute('title') || '').toLowerCase().includes(q);
+        it.style.display = ok ? '' : 'none';
         if (ok) alguma = true;
       });
       return alguma ? wrap.innerHTML : '';
@@ -2035,6 +1989,105 @@ function filtrarGrupos() {
     .join('');
 
   corpo.innerHTML = filtrado || '<div class="msg">Nenhum resultado encontrado</div>';
+}
+
+// Cria as regiões automaticamente agrupando lojas próximas (por distância GPS real)
+// e nomeando cada bloco pela rua (logradouro) mais comum dentro do grupo.
+async function autoAgruparRegioes() {
+  if (!lojas.length) await carregarLojas();
+
+  const comGeo = lojas.filter(l => l.latitude && l.longitude);
+  if (comGeo.length < 2) {
+    toast('É preciso ter pelo menos 2 lojas geocodificadas para montar as regiões', 'err');
+    return;
+  }
+
+  const raioStr = prompt(
+    'Distância máxima (em metros) entre lojas para ficarem no mesmo bloco.\nQuanto menor, mais blocos pequenos e concentrados.',
+    '700'
+  );
+  if (raioStr === null) return;
+  const raioM = parseFloat(raioStr) || 700;
+
+  const tamanhoStr = prompt('Quantidade máxima de lojas por bloco (aprox.):', '6');
+  if (tamanhoStr === null) return;
+  const maxPorBloco = parseInt(tamanhoStr) || 6;
+
+  if (!confirm(`Isso vai substituir a região de todas as ${comGeo.length} lojas geocodificadas. Continuar?`)) return;
+
+  toast('Calculando regiões...', '');
+
+  // Clusterização gulosa: cada bloco começa com uma loja "semente" e vai puxando
+  // a loja não-alocada mais próxima de qualquer membro do bloco, até o limite de
+  // tamanho ou até não haver mais ninguém dentro do raio definido.
+  const restantes = comGeo.slice();
+  const clusters = [];
+
+  while (restantes.length) {
+    const semente = restantes.shift();
+    const grupo = [semente];
+
+    while (grupo.length < maxPorBloco && restantes.length) {
+      let melhorIdx = -1, melhorDist = Infinity;
+      for (let i = 0; i < restantes.length; i++) {
+        const cand = restantes[i];
+        let dMin = Infinity;
+        for (const g of grupo) {
+          const d = distancia(g.latitude, g.longitude, cand.latitude, cand.longitude);
+          if (d < dMin) dMin = d;
+        }
+        if (dMin < melhorDist) { melhorDist = dMin; melhorIdx = i; }
+      }
+      if (melhorIdx === -1 || melhorDist > raioM) break;
+      grupo.push(restantes.splice(melhorIdx, 1)[0]);
+    }
+    clusters.push(grupo);
+  }
+
+  // Ordena os blocos de norte pra sul (pela latitude média), só pra numeração ficar mais previsível
+  clusters.sort((a, b) => {
+    const mediaA = a.reduce((s,l) => s + l.latitude, 0) / a.length;
+    const mediaB = b.reduce((s,l) => s + l.latitude, 0) / b.length;
+    return mediaB - mediaA;
+  });
+
+  // Nomeia cada bloco pela rua (logradouro) mais frequente dentro dele
+  function nomeBaseDoBloco(grupo) {
+    const freq = {};
+    grupo.forEach(l => {
+      const chave = (l.logradouro || l.bairro || '').trim().replace(/,.*$/, '') || 'Sem Endereço';
+      freq[chave] = (freq[chave] || 0) + 1;
+    });
+    return Object.entries(freq).sort((a,b) => b[1]-a[1])[0][0];
+  }
+
+  const contagemNomes = {};
+  const clustersNomeados = clusters.map(grupo => {
+    const base = nomeBaseDoBloco(grupo);
+    contagemNomes[base] = (contagemNomes[base] || 0) + 1;
+    return { nome: `${base} ${contagemNomes[base]}`, lojas: grupo };
+  });
+
+  // Salva no banco em lote (1 update por bloco, usando .in() com os ids das lojas do bloco)
+  let erro = null;
+  for (const c of clustersNomeados) {
+    const ids = c.lojas.map(l => l.id);
+    const { error } = await sb.from('lojas').update({ regiao: c.nome }).in('id', ids);
+    if (error) { erro = error; break; }
+  }
+
+  if (erro) {
+    toast('Erro ao salvar: ' + erro.message, 'err');
+    if (erro.message?.includes('regiao')) {
+      alert('A coluna "regiao" ainda não existe na tabela "lojas".\n\nPeça para rodar no Supabase:\nALTER TABLE lojas ADD COLUMN IF NOT EXISTS regiao text;');
+    }
+    return;
+  }
+
+  toast(`✅ ${clustersNomeados.length} regiões criadas com ${comGeo.length} lojas!`, 'ok');
+  await carregarLojas();
+  await carregarTabelaLojas();
+  await carregarRegioes();
 }
 
 window.addEventListener('load', init);
