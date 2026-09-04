@@ -465,22 +465,22 @@
     }
     thead .tarefa-th-loja { z-index: 6; }
     .tarefa-th-loja {
-      text-align: left; font-weight: 800; color: #111; font-size: 0.78rem;
-      padding: 6px 10px; background: var(--surface2); min-width: 108px; max-width: 108px;
+      text-align: left; font-weight: 800; color: #fff; font-size: 0.78rem;
+      padding: 6px 10px; background: var(--navy); min-width: 108px; max-width: 108px;
     }
     thead tr { position: sticky; top: 0; z-index: 5; }
     .tarefa-th-col {
-      border-bottom: 2px solid #111; background: #fff;
+      border-bottom: 2px solid #111; background: var(--navy);
       padding: 6px 8px; vertical-align: top; min-width: 78px; max-width: 90px; position: relative;
     }
     .tarefa-col-title-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 2px; }
-    .tarefa-col-title { font-weight: 800; font-size: 0.68rem; color: #111; line-height: 1.15; word-break: break-word; }
+    .tarefa-col-title { font-weight: 800; font-size: 0.68rem; color: #fff; line-height: 1.15; word-break: break-word; }
     .tarefa-col-menu-btn {
-      background: none; border: none; color: var(--dim); cursor: pointer; font-size: 0.9rem;
+      background: none; border: none; color: rgba(255,255,255,0.7); cursor: pointer; font-size: 0.9rem;
       line-height: 1; padding: 0 2px; flex-shrink: 0;
     }
-    .tarefa-col-menu-btn:hover { color: var(--navy); }
-    .tarefa-col-stat { font-size: 0.6rem; color: var(--dim); font-weight: 600; margin-top: 3px; white-space: nowrap; }
+    .tarefa-col-menu-btn:hover { color: #fff; }
+    .tarefa-col-stat { font-size: 0.6rem; color: rgba(255,255,255,0.75); font-weight: 600; margin-top: 3px; white-space: nowrap; }
     .tarefa-col-menu {
       display: none; position: absolute; top: 100%; right: 0; margin-top: 4px; z-index: 20;
       background: var(--surface); border: 1.5px solid var(--border); border-radius: 8px;
@@ -493,7 +493,7 @@
     }
     .tarefa-col-menu button:hover { background: var(--surface2); }
     .tarefa-col-menu button.danger { color: var(--red); }
-    .tarefa-th-add { vertical-align: middle; text-align: center; padding: 0 4px; min-width: 44px; }
+    .tarefa-th-add { vertical-align: middle; text-align: center; padding: 0 4px; min-width: 44px; background: var(--navy); }
     .tarefa-add-btn {
       background: none; border: 2px dashed var(--border); color: var(--dim); font-size: 1.2rem;
       font-weight: 800; width: 34px; height: 34px; border-radius: 8px; cursor: pointer; line-height: 1;
@@ -513,6 +513,8 @@
     .tarefa-check:hover { background: var(--surface2); }
     .tarefa-check.feito { border-color: var(--green); color: var(--green); }
     .tarefa-check.feito::after { content: '✓'; }
+    .tarefas-table tr:hover td { background: var(--surface); }
+    .tarefas-table tr:hover td.tarefa-td-loja { background: var(--surface); }
 
     /* CONFIG GPS */
     .gps-config { display: flex; align-items: center; gap: 10px; background: var(--surface2); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 14px; font-size: 0.82rem; }
@@ -2380,6 +2382,11 @@ function renderTarefas() {
     </th>`;
   }).join('');
 
+  function abreviarNomeLoja(nome) {
+    const n = (nome || '').trim();
+    return n.length > 11 ? n.slice(0, 11) + '...' : n;
+  }
+
   const linhas = _tarefasLojasCache.map(l => {
     const celulas = tarefasColunas.map(c => {
       const feito = !!tarefasStatusMap[tarefaChave(l.id, c.id)];
@@ -2388,7 +2395,7 @@ function renderTarefas() {
       </td>`;
     }).join('');
     return `<tr data-busca="${(l.nome_loja||'').toLowerCase()} ${(l.bairro||'').toLowerCase()}">
-      <td class="tarefa-td-loja" title="${l.nome_loja}">${l.nome_loja}</td>${celulas}
+      <td class="tarefa-td-loja" title="${l.nome_loja}">${abreviarNomeLoja(l.nome_loja)}</td>${celulas}
     </tr>`;
   }).join('');
 
