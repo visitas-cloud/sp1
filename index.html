@@ -2277,6 +2277,15 @@ let _tarefasLojasCache = [];    // lojas ativas usadas na tela (independente do 
 
 function tarefaChave(lojaId, colunaId) { return `${lojaId}|${colunaId}`; }
 
+// Detecta erro de RLS e mostra o SQL de correção de forma clara
+function tratarErroTarefas(error, acao) {
+  if (error.message?.toLowerCase().includes('row-level security')) {
+    alert(`Não foi possível ${acao} porque o Supabase está bloqueando por segurança (RLS).\n\nRode este SQL uma vez no SQL Editor do Supabase e tente de novo:\n\nalter table tarefas_colunas disable row level security;\nalter table tarefas_status disable row level security;`);
+  } else {
+    toast(`Erro ao ${acao}: ` + error.message, 'err');
+  }
+}
+
 async function carregarTarefas() {
   const corpo = document.getElementById('tarefas-corpo');
   corpo.innerHTML = '<div class="msg">Carregando...</div>';
@@ -2325,17 +2334,19 @@ function renderTarefas() {
 
   if (!_tarefasLojasCache.length) { corpo.innerHTML = '<div class="msg">Nenhuma loja cadastrada</div>'; return; }
 
-  if (!tarefasColunas.length) {
-    corpo.innerHTML = `
-      <div class="tarefas-header-bar">Tarefas - Lojas</div>
-      <div class="card" style="text-align:center;padding:32px 20px">
-        <p style="color:var(--dim);font-size:0.85rem;margin-bottom:14px">Nenhuma tarefa criada ainda</p>
-        <button class="btn btn-primary" onclick="adicionarColunaTarefa()">➕ Criar primeira tarefa</button>
-      </div>`;
-    return;
-  }
-
   const total = _tarefasLojasCache.length;
+  const semColunas = !tarefasColunas.length;
+
+  const avisoSemColunas = semColunas ? `
+    <div class="card" style="margin-bottom:14px">
+      <p style="color:var(--dim);font-size:0.85rem;margin-bottom:12px">
+        Nenhuma tarefa criada ainda — mas as ${total} lojas já estão carregadas na lista abaixo.
+      </p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="criarTarefasPadrao()">✨ Criar tarefas padrão</button>
+        <button class="btn btn-outline" onclick="adicionarColunaTarefa()">➕ Criar uma tarefa personalizada</button>
+      </div>
+    </div>` : '';
 
   const resumo = `
     <div class="tarefas-resumo" id="tarefasResumo">
@@ -2378,6 +2389,7 @@ function renderTarefas() {
 
   corpo.innerHTML = `
     <div class="tarefas-header-bar">Tarefas - Lojas</div>
+    ${avisoSemColunas}
     ${resumo}
     <div class="table-wrap" style="border:none">
       <table class="tarefas-table">
@@ -2418,8 +2430,23 @@ async function adicionarColunaTarefa() {
   if (!titulo || !titulo.trim()) return;
   const proximaOrdem = tarefasColunas.length ? Math.max(...tarefasColunas.map(c => c.ordem||0)) + 1 : 0;
   const { error } = await sb.from('tarefas_colunas').insert({ titulo: titulo.trim(), ordem: proximaOrdem });
-  if (error) { toast('Erro ao criar tarefa: ' + error.message, 'err'); return; }
+  if (error) { tratarErroTarefas(error, 'criar a tarefa'); return; }
   toast('Tarefa criada ✅', 'ok');
+  await carregarTarefas();
+}
+
+// Cria de uma vez algumas colunas já prontas (título pode ser editado depois pelo menu ⋮)
+async function criarTarefasPadrao() {
+  const padrao = ['Treina seguros', 'Quadro Tarifas', 'CDC Prem', 'Nova tarefa'];
+  const jaExistentes = new Set(tarefasColunas.map(c => c.titulo));
+  const aInserir = padrao.filter(t => !jaExistentes.has(t));
+  if (!aInserir.length) { toast('Essas tarefas já existem', 'err'); return; }
+  const baseOrdem = tarefasColunas.length ? Math.max(...tarefasColunas.map(c => c.ordem||0)) + 1 : 0;
+  const { error } = await sb.from('tarefas_colunas').insert(
+    aInserir.map((titulo, i) => ({ titulo, ordem: baseOrdem + i }))
+  );
+  if (error) { tratarErroTarefas(error, 'criar as tarefas'); return; }
+  toast('Tarefas criadas ✅', 'ok');
   await carregarTarefas();
 }
 
@@ -2429,7 +2456,7 @@ async function editarTituloColuna(id) {
   const novo = prompt('Editar nome da tarefa:', col.titulo);
   if (novo === null || !novo.trim() || novo.trim() === col.titulo) return;
   const { error } = await sb.from('tarefas_colunas').update({ titulo: novo.trim() }).eq('id', id);
-  if (error) { toast('Erro ao editar: ' + error.message, 'err'); return; }
+  if (error) { tratarErroTarefas(error, 'editar o título'); return; }
   toast('Título atualizado ✅', 'ok');
   await carregarTarefas();
 }
@@ -2439,7 +2466,7 @@ async function limparColuna(id) {
   if (!col) return;
   if (!confirm(`Desmarcar todas as lojas da tarefa "${col.titulo}"?`)) return;
   const { error } = await sb.from('tarefas_status').update({ feito: false, atualizado_em: new Date().toISOString() }).eq('coluna_id', id);
-  if (error) { toast('Erro ao limpar: ' + error.message, 'err'); return; }
+  if (error) { tratarErroTarefas(error, 'limpar a tarefa'); return; }
   toast('Tarefa zerada ✅', 'ok');
   await carregarTarefas();
 }
@@ -2449,7 +2476,7 @@ async function excluirColuna(id) {
   if (!col) return;
   if (!confirm(`Excluir a tarefa "${col.titulo}"? Isso apaga também todas as marcações feitas nela.`)) return;
   const { error } = await sb.from('tarefas_colunas').delete().eq('id', id);
-  if (error) { toast('Erro ao excluir: ' + error.message, 'err'); return; }
+  if (error) { tratarErroTarefas(error, 'excluir a tarefa'); return; }
   toast('Tarefa excluída ✅', 'ok');
   await carregarTarefas();
 }
@@ -2474,7 +2501,7 @@ async function toggleTarefa(lojaId, colunaId, btnEl) {
     btnEl.classList.toggle('feito', atual);
     tarefasStatusMap[chave] = atual;
     atualizarResumoColuna(colunaId);
-    toast('Erro ao salvar: ' + error.message, 'err');
+    tratarErroTarefas(error, 'salvar a marcação');
   }
 }
 
