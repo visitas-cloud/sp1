@@ -444,6 +444,61 @@
     .regiao-move-opcao.atual { border-color: var(--green); background: var(--green-pale); font-weight: 700; }
     .regiao-move-opcao .qtd { font-size: 0.68rem; color: var(--dim); font-weight: 500; }
 
+    /* TAREFAS */
+    .tarefas-header-bar {
+      background: #111; color: #fff; font-weight: 800; text-transform: uppercase;
+      letter-spacing: .03em; padding: 14px 18px; border-radius: 10px; margin-bottom: 16px; font-size: 1rem;
+    }
+    .tarefas-resumo { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+    .tarefas-resumo-item {
+      background: var(--surface2); border: 1.5px solid var(--border); border-radius: 10px;
+      padding: 8px 14px; min-width: 100px;
+    }
+    .tarefas-resumo-item .num { display: block; font-size: 1.15rem; font-weight: 800; color: var(--navy); }
+    .tarefas-resumo-item .label { display: block; font-size: 0.68rem; color: var(--dim); font-weight: 600; margin-top: 2px; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    table.tarefas-table { border-collapse: separate; border-spacing: 6px; width: auto; }
+    .tarefa-th-loja { text-align: left; font-weight: 800; color: #111; font-size: 0.95rem; padding: 6px 10px 10px; }
+    .tarefa-th-col {
+      border: 2.5px solid #111; border-radius: 10px; background: #fff;
+      padding: 10px 12px; vertical-align: top; min-width: 110px; max-width: 150px; position: relative;
+    }
+    .tarefa-col-title-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 4px; }
+    .tarefa-col-title { font-weight: 800; font-size: 0.86rem; color: #111; line-height: 1.2; word-break: break-word; }
+    .tarefa-col-menu-btn {
+      background: none; border: none; color: var(--dim); cursor: pointer; font-size: 1rem;
+      line-height: 1; padding: 0 2px; flex-shrink: 0;
+    }
+    .tarefa-col-menu-btn:hover { color: var(--navy); }
+    .tarefa-col-stat { font-size: 0.68rem; color: var(--dim); font-weight: 600; margin-top: 6px; }
+    .tarefa-col-menu {
+      display: none; position: absolute; top: 100%; right: 0; margin-top: 4px; z-index: 20;
+      background: var(--surface); border: 1.5px solid var(--border); border-radius: 8px;
+      box-shadow: var(--shadow-md); min-width: 170px; overflow: hidden;
+    }
+    .tarefa-col-menu.show { display: block; }
+    .tarefa-col-menu button {
+      display: block; width: 100%; text-align: left; padding: 9px 12px; background: none; border: none;
+      font-family: var(--font); font-size: 0.78rem; color: var(--text); cursor: pointer; white-space: nowrap;
+    }
+    .tarefa-col-menu button:hover { background: var(--surface2); }
+    .tarefa-col-menu button.danger { color: var(--red); }
+    .tarefa-th-add { vertical-align: middle; text-align: center; padding: 0 6px; }
+    .tarefa-add-btn {
+      background: none; border: 2.5px dashed var(--border); color: var(--dim); font-size: 1.4rem;
+      font-weight: 800; width: 44px; height: 44px; border-radius: 10px; cursor: pointer; line-height: 1;
+    }
+    .tarefa-add-btn:hover { border-color: var(--green); color: var(--green); }
+    .tarefa-td-loja { font-weight: 700; color: var(--navy); font-size: 0.82rem; padding: 4px 10px; white-space: nowrap; }
+    .tarefa-td-check { text-align: center; padding: 2px; }
+    .tarefa-check {
+      width: 34px; height: 34px; border-radius: 8px; border: 2.5px solid #111; background: #fff;
+      cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+      font-size: 1.2rem; font-weight: 900; color: transparent; transition: all .15s;
+    }
+    .tarefa-check:hover { background: var(--surface2); }
+    .tarefa-check.feito { border-color: var(--green); color: var(--green); }
+    .tarefa-check.feito::after { content: '✓'; }
+
     /* CONFIG GPS */
     .gps-config { display: flex; align-items: center; gap: 10px; background: var(--surface2); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 14px; font-size: 0.82rem; }
     .gps-config label { color: var(--dim); margin: 0; font-weight: 400; }
@@ -484,6 +539,11 @@
     <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7">
       <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a2 2 0 01-2.828 0l-4.243-4.243a8 8 0 1111.314 0z"/>
       <circle cx="12" cy="11" r="3" stroke="currentColor" stroke-width="1.7"/>
+    </svg>
+  </button>
+  <button onclick="showPage('tarefas')" id="nav-tarefas" title="Tarefas">
+    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2M9 12l2 2 4-4"/>
     </svg>
   </button>
   <button onclick="showPage('painel')" id="nav-painel" title="Painel">
@@ -551,6 +611,17 @@
   </div>
   <input class="search-bar" type="text" placeholder="🔍 Buscar loja ou região..." oninput="filtrarRegioes()" id="buscaRegiao" />
   <div id="regiao-corpo"><div class="msg">Carregando...</div></div>
+</div>
+
+<!-- TAREFAS -->
+<div class="page" id="page-tarefas">
+  <div class="card" style="margin-bottom:14px">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between">
+      <input class="search-bar" style="margin:0;flex:1;min-width:200px" type="text" placeholder="🔍 Buscar loja..." oninput="filtrarTarefas()" id="buscaTarefa" />
+      <button class="btn btn-outline" onclick="carregarTarefas()">🔄 Recarregar</button>
+    </div>
+  </div>
+  <div id="tarefas-corpo"><div class="msg">Carregando...</div></div>
 </div>
 <div class="page" id="page-historico">
   <div class="card">
@@ -769,6 +840,7 @@ function showPage(name) {
     else carregarMetro();
   }
   if (name === 'regiao') carregarRegioes();
+  if (name === 'tarefas') carregarTarefas();
 }
 
 function hoje() { return new Date().toISOString().split('T')[0]; }
@@ -2194,6 +2266,229 @@ async function autoAgruparRegioes() {
   await carregarLojas();
   await carregarTabelaLojas();
   await carregarRegioes();
+}
+
+// ══════════════════════════════════════════
+//  TAREFAS — checklist de lojas (controle interno, não usa dados de visita)
+// ══════════════════════════════════════════
+let tarefasColunas = [];        // [{id, titulo, ordem}]
+let tarefasStatusMap = {};      // { "lojaId|colunaId": true/false }
+let _tarefasLojasCache = [];    // lojas ativas usadas na tela (independente do array global "lojas")
+
+function tarefaChave(lojaId, colunaId) { return `${lojaId}|${colunaId}`; }
+
+async function carregarTarefas() {
+  const corpo = document.getElementById('tarefas-corpo');
+  corpo.innerHTML = '<div class="msg">Carregando...</div>';
+
+  // Lojas: usa apenas id/nome/bairro — não depende de visitas
+  const { data: lj, error: errLj } = await sb.from('lojas').select('id, nome_loja, bairro').eq('ativa', true).order('nome_loja');
+  if (errLj) { corpo.innerHTML = `<div class="msg err">❌ ${errLj.message}</div>`; return; }
+  _tarefasLojasCache = lj || [];
+
+  const { data: cols, error: errCols } = await sb.from('tarefas_colunas').select('*').order('ordem', { ascending: true });
+  if (errCols) {
+    corpo.innerHTML = `<div class="msg err">❌ ${errCols.message}<br><br>
+      <small>Parece que as tabelas de tarefas ainda não existem no Supabase. Rode este SQL uma vez no SQL Editor:</small>
+      <pre style="text-align:left;background:#f4f4f4;padding:12px;border-radius:8px;margin-top:8px;font-size:0.7rem;overflow-x:auto">create extension if not exists pgcrypto;
+
+create table if not exists tarefas_colunas (
+  id uuid primary key default gen_random_uuid(),
+  titulo text not null,
+  ordem integer not null default 0,
+  criado_em timestamptz not null default now()
+);
+
+create table if not exists tarefas_status (
+  id uuid primary key default gen_random_uuid(),
+  loja_id text not null,
+  coluna_id uuid not null references tarefas_colunas(id) on delete cascade,
+  feito boolean not null default false,
+  atualizado_em timestamptz not null default now(),
+  unique (loja_id, coluna_id)
+);</pre></div>`;
+    return;
+  }
+  tarefasColunas = cols || [];
+
+  const { data: statusRows, error: errStatus } = await sb.from('tarefas_status').select('loja_id, coluna_id, feito');
+  if (errStatus) { corpo.innerHTML = `<div class="msg err">❌ ${errStatus.message}</div>`; return; }
+
+  tarefasStatusMap = {};
+  (statusRows || []).forEach(r => { tarefasStatusMap[tarefaChave(r.loja_id, r.coluna_id)] = !!r.feito; });
+
+  renderTarefas();
+}
+
+function renderTarefas() {
+  const corpo = document.getElementById('tarefas-corpo');
+
+  if (!_tarefasLojasCache.length) { corpo.innerHTML = '<div class="msg">Nenhuma loja cadastrada</div>'; return; }
+
+  if (!tarefasColunas.length) {
+    corpo.innerHTML = `
+      <div class="tarefas-header-bar">Tarefas - Lojas</div>
+      <div class="card" style="text-align:center;padding:32px 20px">
+        <p style="color:var(--dim);font-size:0.85rem;margin-bottom:14px">Nenhuma tarefa criada ainda</p>
+        <button class="btn btn-primary" onclick="adicionarColunaTarefa()">➕ Criar primeira tarefa</button>
+      </div>`;
+    return;
+  }
+
+  const total = _tarefasLojasCache.length;
+
+  const resumo = `
+    <div class="tarefas-resumo" id="tarefasResumo">
+      <div class="tarefas-resumo-item"><span class="num">${total}</span><span class="label">Lojas cadastradas</span></div>
+      ${tarefasColunas.map(c => {
+        const feitos = _tarefasLojasCache.filter(l => tarefasStatusMap[tarefaChave(l.id, c.id)]).length;
+        const pct = total ? Math.round(feitos/total*100) : 0;
+        return `<div class="tarefas-resumo-item" id="resumo-col-${c.id}"><span class="num">${feitos}/${total}</span><span class="label" title="${c.titulo}">${c.titulo} · ${pct}%</span></div>`;
+      }).join('')}
+    </div>`;
+
+  const cabecalhoColunas = tarefasColunas.map(c => {
+    const feitos = _tarefasLojasCache.filter(l => tarefasStatusMap[tarefaChave(l.id, c.id)]).length;
+    const pct = total ? Math.round(feitos/total*100) : 0;
+    return `<th class="tarefa-th-col">
+      <div class="tarefa-col-title-row">
+        <span class="tarefa-col-title">${c.titulo}</span>
+        <button class="tarefa-col-menu-btn" onclick="toggleMenuColuna('${c.id}', event)">⋮</button>
+      </div>
+      <div class="tarefa-col-stat" id="colstat-${c.id}">${feitos}/${total} · ${pct}%</div>
+      <div class="tarefa-col-menu" id="menu-${c.id}">
+        <button onclick="editarTituloColuna('${c.id}')">✏️ Editar título</button>
+        <button onclick="limparColuna('${c.id}')">🧹 Limpar marcações</button>
+        <button class="danger" onclick="excluirColuna('${c.id}')">🗑️ Excluir coluna</button>
+      </div>
+    </th>`;
+  }).join('');
+
+  const linhas = _tarefasLojasCache.map(l => {
+    const celulas = tarefasColunas.map(c => {
+      const feito = !!tarefasStatusMap[tarefaChave(l.id, c.id)];
+      return `<td class="tarefa-td-check">
+        <button class="tarefa-check ${feito ? 'feito' : ''}" onclick="toggleTarefa('${l.id}','${c.id}', this)" title="${c.titulo}"></button>
+      </td>`;
+    }).join('');
+    return `<tr data-busca="${(l.nome_loja||'').toLowerCase()} ${(l.bairro||'').toLowerCase()}">
+      <td class="tarefa-td-loja">${l.nome_loja}</td>${celulas}
+    </tr>`;
+  }).join('');
+
+  corpo.innerHTML = `
+    <div class="tarefas-header-bar">Tarefas - Lojas</div>
+    ${resumo}
+    <div class="table-wrap" style="border:none">
+      <table class="tarefas-table">
+        <thead><tr>
+          <th class="tarefa-th-loja">Lojas</th>
+          ${cabecalhoColunas}
+          <th class="tarefa-th-add"><button class="tarefa-add-btn" onclick="adicionarColunaTarefa()" title="Nova tarefa">+</button></th>
+        </tr></thead>
+        <tbody>${linhas}</tbody>
+      </table>
+    </div>`;
+}
+
+function filtrarTarefas() {
+  const q = document.getElementById('buscaTarefa').value.toLowerCase().trim();
+  document.querySelectorAll('#tarefas-corpo tbody tr').forEach(tr => {
+    const ok = !q || (tr.dataset.busca || '').includes(q);
+    tr.style.display = ok ? '' : 'none';
+  });
+}
+
+// Fecha qualquer menu de coluna aberto ao clicar fora dele
+document.addEventListener('click', (e) => {
+  if (e.target.closest('.tarefa-col-menu-btn') || e.target.closest('.tarefa-col-menu')) return;
+  document.querySelectorAll('.tarefa-col-menu.show').forEach(m => m.classList.remove('show'));
+});
+
+function toggleMenuColuna(id, event) {
+  event.stopPropagation();
+  const menu = document.getElementById(`menu-${id}`);
+  const jaAberto = menu.classList.contains('show');
+  document.querySelectorAll('.tarefa-col-menu.show').forEach(m => m.classList.remove('show'));
+  if (!jaAberto) menu.classList.add('show');
+}
+
+async function adicionarColunaTarefa() {
+  const titulo = prompt('Nome da nova tarefa:');
+  if (!titulo || !titulo.trim()) return;
+  const proximaOrdem = tarefasColunas.length ? Math.max(...tarefasColunas.map(c => c.ordem||0)) + 1 : 0;
+  const { error } = await sb.from('tarefas_colunas').insert({ titulo: titulo.trim(), ordem: proximaOrdem });
+  if (error) { toast('Erro ao criar tarefa: ' + error.message, 'err'); return; }
+  toast('Tarefa criada ✅', 'ok');
+  await carregarTarefas();
+}
+
+async function editarTituloColuna(id) {
+  const col = tarefasColunas.find(c => c.id === id);
+  if (!col) return;
+  const novo = prompt('Editar nome da tarefa:', col.titulo);
+  if (novo === null || !novo.trim() || novo.trim() === col.titulo) return;
+  const { error } = await sb.from('tarefas_colunas').update({ titulo: novo.trim() }).eq('id', id);
+  if (error) { toast('Erro ao editar: ' + error.message, 'err'); return; }
+  toast('Título atualizado ✅', 'ok');
+  await carregarTarefas();
+}
+
+async function limparColuna(id) {
+  const col = tarefasColunas.find(c => c.id === id);
+  if (!col) return;
+  if (!confirm(`Desmarcar todas as lojas da tarefa "${col.titulo}"?`)) return;
+  const { error } = await sb.from('tarefas_status').update({ feito: false, atualizado_em: new Date().toISOString() }).eq('coluna_id', id);
+  if (error) { toast('Erro ao limpar: ' + error.message, 'err'); return; }
+  toast('Tarefa zerada ✅', 'ok');
+  await carregarTarefas();
+}
+
+async function excluirColuna(id) {
+  const col = tarefasColunas.find(c => c.id === id);
+  if (!col) return;
+  if (!confirm(`Excluir a tarefa "${col.titulo}"? Isso apaga também todas as marcações feitas nela.`)) return;
+  const { error } = await sb.from('tarefas_colunas').delete().eq('id', id);
+  if (error) { toast('Erro ao excluir: ' + error.message, 'err'); return; }
+  toast('Tarefa excluída ✅', 'ok');
+  await carregarTarefas();
+}
+
+async function toggleTarefa(lojaId, colunaId, btnEl) {
+  const chave = tarefaChave(lojaId, colunaId);
+  const atual = !!tarefasStatusMap[chave];
+  const novo = !atual;
+
+  // Atualização otimista: reflete na hora, sem esperar o banco
+  btnEl.classList.toggle('feito', novo);
+  tarefasStatusMap[chave] = novo;
+  atualizarResumoColuna(colunaId);
+
+  const { error } = await sb.from('tarefas_status').upsert(
+    { loja_id: String(lojaId), coluna_id: colunaId, feito: novo, atualizado_em: new Date().toISOString() },
+    { onConflict: 'loja_id,coluna_id' }
+  );
+
+  if (error) {
+    // Reverte se não conseguiu salvar
+    btnEl.classList.toggle('feito', atual);
+    tarefasStatusMap[chave] = atual;
+    atualizarResumoColuna(colunaId);
+    toast('Erro ao salvar: ' + error.message, 'err');
+  }
+}
+
+function atualizarResumoColuna(colunaId) {
+  const col = tarefasColunas.find(c => c.id === colunaId);
+  if (!col) return;
+  const total = _tarefasLojasCache.length;
+  const feitos = _tarefasLojasCache.filter(l => tarefasStatusMap[tarefaChave(l.id, colunaId)]).length;
+  const pct = total ? Math.round(feitos/total*100) : 0;
+  const elResumo = document.getElementById(`resumo-col-${colunaId}`);
+  if (elResumo) elResumo.querySelector('.num').textContent = `${feitos}/${total}`;
+  if (elResumo) elResumo.querySelector('.label').textContent = `${col.titulo} · ${pct}%`;
+  const elColStat = document.getElementById(`colstat-${colunaId}`);
+  if (elColStat) elColStat.textContent = `${feitos}/${total} · ${pct}%`;
 }
 
 window.addEventListener('load', init);
