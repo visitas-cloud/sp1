@@ -38,6 +38,10 @@
     }
     .logo { font-weight: 700; font-size: 0.95rem; color: var(--green-light); margin-right: auto; white-space: nowrap; }
     .logo em { color: #fff; font-style: normal; font-weight: 400; }
+    .logo-total-badge {
+      background: rgba(255,255,255,0.15); color: #fff; border-radius: 20px;
+      padding: 2px 9px; font-size: 0.68rem; font-weight: 700; margin-left: 4px; vertical-align: middle;
+    }
     nav button {
       background: none; border: none; color: rgba(255,255,255,0.6);
       font-family: var(--font); font-size: 1rem; font-weight: 500; display:flex; align-items:center; justify-content:center;
@@ -536,7 +540,7 @@
 <body>
 
 <nav>
-  <span class="logo">📍 Visitas <em>de Lojas</em></span>
+  <span class="logo">📍 Visitas <em>de Lojas</em> <span id="logoTotalLojas" class="logo-total-badge"></span></span>
   <button onclick="showPage('rotas')" id="nav-rotas" title="Rotas" style="display:none">
     <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7">
       <path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
@@ -1201,6 +1205,9 @@ async function carregarLojas() {
   }));
 
   renderLista();
+
+  const badgeTotal = document.getElementById('logoTotalLojas');
+  if (badgeTotal) badgeTotal.textContent = lojas.length ? `${lojas.length} lojas` : '';
 
   // Se metro ou região estiverem abertos, recarrega também
   const metroAtivo  = document.getElementById('page-metro')?.classList.contains('active');
