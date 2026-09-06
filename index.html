@@ -425,9 +425,12 @@
     }
     .regiao-box {
       width: 38px; height: 24px; border-radius: 6px; background: #e5e5e5; border: 1.5px solid #ccc;
-      flex-shrink: 0; transition: all .2s;
+      flex-shrink: 0; transition: all .2s; cursor: pointer;
     }
+    .regiao-box:active { transform: scale(0.9); }
+    .regiao-box:hover { border-color: var(--green); }
     .regiao-box.visitada { background: var(--green); border-color: var(--green); }
+    .regiao-box.visitada:hover { filter: brightness(0.92); }
     .regiao-inline {
       border: 1.5px solid var(--border); border-radius: 6px; padding: 5px 8px;
       font-family: var(--font); font-size: 0.76rem; color: var(--text); background: var(--surface);
@@ -870,7 +873,28 @@ function showPage(name) {
   if (name === 'tarefas') carregarTarefas();
 }
 
-function hoje() { return new Date().toISOString().split('T')[0]; }
+function hoje() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+// Converte uma data local "YYYY-MM-DD" nos limites reais (início/fim do dia no fuso do
+// aparelho), já em UTC — evita o bug clássico de "virou o dia" perto da meia-noite
+// quando comparamos strings de data direto com o timestamp salvo no banco.
+function limitesDoDia(dataStr) {
+  const [y, m, d] = dataStr.split('-').map(Number);
+  const inicio = new Date(y, m - 1, d, 0, 0, 0, 0);
+  const fim    = new Date(y, m - 1, d, 23, 59, 59, 999);
+  return { inicio: inicio.toISOString(), fim: fim.toISOString() };
+}
+
+// Compara se um timestamp de visita (UTC) caiu no mesmo dia-calendário local de "agora"
+function ehMesmoDiaLocal(timestampISO, dataStrLocal) {
+  if (!timestampISO) return false;
+  const dv = new Date(timestampISO);
+  const [y, m, d] = dataStrLocal.split('-').map(Number);
+  return dv.getFullYear() === y && (dv.getMonth()+1) === m && dv.getDate() === d;
+}
 
 // ══════════════════════════════════════════
 //  DISTÂNCIA (Haversine)
@@ -1049,11 +1073,12 @@ function iniciarLongPress(e, id) {
 
     // Verifica se tem visita hoje para decidir marcar ou desmarcar
     const d = hoje();
+    const { inicio, fim } = limitesDoDia(d);
     const { data: vsHoje } = await sb.from('visitas')
       .select('id')
       .eq('loja_id', id)
-      .gte('visitada_em', d+'T00:00:00')
-      .lte('visitada_em', d+'T23:59:59')
+      .gte('visitada_em', inicio)
+      .lte('visitada_em', fim)
       .limit(1);
 
     if (vsHoje && vsHoje.length > 0) {
@@ -1114,7 +1139,7 @@ async function desmarcaVisita(loja) {
 
   // Se era a visita de hoje, limpa o flag
   const d = hoje();
-  const eraHoje = vsRecente[0].visitada_em.startsWith(d);
+  const eraHoje = ehMesmoDiaLocal(vsRecente[0].visitada_em, d);
   if (eraHoje) {
     loja.visitada_hoje = false;
     loja.ultima_visita = null;
@@ -1181,25 +1206,19 @@ async function carregarLojas() {
   const { data: ls, error: e2 } = await sb.from('lojas').select('*').eq('ativa', true).order('nome_loja');
   if (e2) { document.getElementById('lista').innerHTML = `<div class="msg err" >❌ ${e2.message}</div>`; return; }
 
-  // Visitas de hoje
+  // Busca todas as visitas de uma vez só e calcula tudo (hoje/última/total) comparando
+  // por data-calendário local, evitando o bug de fuso horário perto da meia-noite.
   const d = hoje();
-  const { data: vsHoje } = await sb.from('visitas').select('loja_id, visitada_em')
-    .gte('visitada_em', d+'T00:00:00').lte('visitada_em', d+'T23:59:59');
-
-  // Total de visitas por loja (all time)
-  const { data: vsTotais } = await sb.from('visitas').select('loja_id');
-
-  // Ultima visita por loja (all time)
-  const { data: vsUltima } = await sb.from('visitas').select('loja_id, visitada_em').order('visitada_em', { ascending: false });
+  const { data: vsTodas } = await sb.from('visitas').select('loja_id, visitada_em').order('visitada_em', { ascending: false });
 
   const vmHoje = {};
-  (vsHoje||[]).forEach(v => { if (!vmHoje[v.loja_id] || v.visitada_em > vmHoje[v.loja_id]) vmHoje[v.loja_id] = v.visitada_em; });
-
   const vmTotal = {};
-  (vsTotais||[]).forEach(v => { vmTotal[v.loja_id] = (vmTotal[v.loja_id]||0) + 1; });
-
   const vmUltima = {};
-  (vsUltima||[]).forEach(v => { if (!vmUltima[v.loja_id]) vmUltima[v.loja_id] = v.visitada_em; });
+  (vsTodas||[]).forEach(v => {
+    vmTotal[v.loja_id] = (vmTotal[v.loja_id]||0) + 1;
+    if (!vmUltima[v.loja_id]) vmUltima[v.loja_id] = v.visitada_em; // já vem ordenado desc
+    if (ehMesmoDiaLocal(v.visitada_em, d)) vmHoje[v.loja_id] = true;
+  });
 
   lojas = (ls||[]).map(l => ({
     ...l,
@@ -1280,9 +1299,10 @@ async function carregarHistorico() {
   const el = document.getElementById('tblHistorico');
   if (!d) return;
   el.innerHTML = '<div class="msg">Buscando...</div>';
+  const { inicio, fim } = limitesDoDia(d);
   const { data, error } = await sb.from('visitas')
     .select('*, lojas(nome_loja, bairro, zona)')
-    .gte('visitada_em', d+'T00:00:00').lte('visitada_em', d+'T23:59:59')
+    .gte('visitada_em', inicio).lte('visitada_em', fim)
     .order('visitada_em', { ascending: false });
   if (error) { el.innerHTML = `<div class="msg err">❌ ${error.message}</div>`; return; }
   if (!data?.length) { el.innerHTML = '<div class="msg">Nenhuma visita neste dia</div>'; return; }
@@ -1701,9 +1721,10 @@ async function resetVisitas() {
   if (!confirm(`Apagar todas as visitas de hoje (${dataFmt})?
 
 As lojas permanecem cadastradas.`)) return;
+  const { inicio, fim } = limitesDoDia(d);
   const { error } = await sb.from('visitas').delete()
-    .gte('visitada_em', d+'T00:00:00')
-    .lte('visitada_em', d+'T23:59:59');
+    .gte('visitada_em', inicio)
+    .lte('visitada_em', fim);
   if (error) return toast('Erro: ' + error.message, 'err');
   marcadas.clear();
   Object.keys(ultimaMarcacao).forEach(k => delete ultimaMarcacao[k]);
@@ -1796,12 +1817,14 @@ async function carregarMetro() {
   const corpo = document.getElementById('metro-corpo');
   corpo.innerHTML = '<div class="msg">Carregando...</div>';
 
-  // Busca visitas no período
+  // Busca visitas no período (limites calculados no fuso local do aparelho)
+  const { inicio } = limitesDoDia(de);
+  const { fim } = limitesDoDia(ate);
   const { data: vsData, error } = await sb
     .from('visitas')
     .select('loja_id')
-    .gte('visitada_em', de + 'T00:00:00')
-    .lte('visitada_em', ate + 'T23:59:59');
+    .gte('visitada_em', inicio)
+    .lte('visitada_em', fim);
 
   if (error) { corpo.innerHTML = `<div class="msg err">❌ ${error.message}</div>`; return; }
 
@@ -1959,12 +1982,14 @@ async function metroMarcar(lojaId, el) {
 }
 
 async function metroDesmarcar(lojaId, de, ate, el) {
-  // Remove a visita mais recente da loja no período
+  // Remove a visita mais recente da loja no período (limites no fuso local do aparelho)
+  const limDe  = limitesDoDia(de);
+  const limAte = limitesDoDia(ate);
   const { data: vs } = await sb.from('visitas')
     .select('id')
     .eq('loja_id', lojaId)
-    .gte('visitada_em', de + 'T00:00:00')
-    .lte('visitada_em', ate + 'T23:59:59')
+    .gte('visitada_em', limDe.inicio)
+    .lte('visitada_em', limAte.fim)
     .order('visitada_em', { ascending: false })
     .limit(1);
 
@@ -2039,10 +2064,15 @@ async function carregarRegioes() {
 
   function montaItem(l) {
     const dica = `${l.nome_loja}${l.ultima_visita ? ' · última visita: ' + new Date(l.ultima_visita).toLocaleDateString('pt-BR') : ' · ainda não visitada'}`;
+    const h = hoje();
     return `<div class="regiao-item" title="${dica}">
       <span class="regiao-nome">${l.nome_loja}</span>
       <div class="regiao-item-actions">
-        <span class="regiao-box ${l.visitada_hoje ? 'visitada' : ''}"></span>
+        <span class="regiao-box ${l.visitada_hoje ? 'visitada' : ''}"
+          data-loja="${l.id}" data-feito="${l.visitada_hoje ? '1' : '0'}" data-de="${h}" data-ate="${h}"
+          title="${l.visitada_hoje ? 'Toque para desmarcar a visita de hoje' : 'Toque para marcar visita de hoje'}"
+          onclick="metroToggle(this)"
+        ></span>
         <button type="button" class="regiao-move-btn" title="Mover para outra região" onclick="abrirModalMover('${l.id}')">⇄</button>
       </div>
     </div>`;
