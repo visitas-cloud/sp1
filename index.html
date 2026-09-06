@@ -1704,13 +1704,13 @@ As lojas permanecem cadastradas.`)) return;
 
 // Configuração: potencial → { meta mensal, campos na barra, cor }
 const METRO_CFG = {
-  'F': { meta: 8, campos: 8, cor: 'campo-F', hdr: 'mpot-F', label: 'F. > 30 Gravames'    },
-  'E': { meta: 8, campos: 8, cor: 'campo-E', hdr: 'mpot-E', label: 'E. 21-30 Gravames'   },
+  'F': { meta: 8, campos: 6, cor: 'campo-F', hdr: 'mpot-F', label: 'F. > 30 Gravames'    },
+  'E': { meta: 8, campos: 6, cor: 'campo-E', hdr: 'mpot-E', label: 'E. 21-30 Gravames'   },
   'D': { meta: 6, campos: 6, cor: 'campo-D', hdr: 'mpot-D', label: 'D. 11-20 Gravames'   },
-  'C': { meta: 4, campos: 4, cor: 'campo-C', hdr: 'mpot-C', label: 'C. 6-10 Gravames'    },
-  'B': { meta: 2, campos: 2, cor: 'campo-B', hdr: 'mpot-B', label: 'B. 2-5 Gravames'     },
-  'A': { meta: 1, campos: 1, cor: 'campo-A', hdr: 'mpot-A', label: 'A. 1 Gravame'        },
-  '0': { meta: 0, campos: 1, cor: ''        , hdr: 'mpot-0', label: '0 Gravames'          },
+  'C': { meta: 4, campos: 6, cor: 'campo-C', hdr: 'mpot-C', label: 'C. 6-10 Gravames'    },
+  'B': { meta: 2, campos: 6, cor: 'campo-B', hdr: 'mpot-B', label: 'B. 2-5 Gravames'     },
+  'A': { meta: 1, campos: 6, cor: 'campo-A', hdr: 'mpot-A', label: 'A. 1 Gravame'        },
+  '0': { meta: 0, campos: 6, cor: ''        , hdr: 'mpot-0', label: '0 Gravames'          },
 };
 
 // Dias úteis entre duas datas (seg-sex)
@@ -1861,33 +1861,21 @@ async function carregarMetro() {
       const projecao = meta * proporcao;
       const atrasado = meta > 0 && visitas < Math.floor(projecao);
 
-      // Monta campos da barra — sempre 8 slots
-      const TOTAL_SLOTS = 8;
+      // Monta campos da barra — sempre 6 slots clicáveis, para todas as lojas
+      const TOTAL_SLOTS = 6;
       let barraHtml = '';
 
-      if (meta === 0) {
-        for (let i = 0; i < TOTAL_SLOTS; i++)
-          barraHtml += `<div class="metro-campo oculto"></div>`;
-      } else {
-        for (let i = 0; i < TOTAL_SLOTS; i++) {
-          if (i < campos) {
-            const feito = i < visitas;
-            const cls   = feito ? `feito ${cfg.cor}` : 'vazio';
-            // data-loja e data-idx para o longpress
-            barraHtml += `<div class="metro-campo ${cls}"
-              data-loja="${l.id}"
-              data-idx="${i}"
-              data-feito="${feito ? '1' : '0'}"
-              data-de="${de}"
-              data-ate="${ate}"
-              onpointerdown="metroPressStart(event,this)"
-              onpointerup="metroPressEnd(event,this)"
-              onpointerleave="metroPressEnd(event,this)"
-              oncontextmenu="return false"></div>`;
-          } else {
-            barraHtml += `<div class="metro-campo oculto"></div>`;
-          }
-        }
+      for (let i = 0; i < TOTAL_SLOTS; i++) {
+        const feito = i < visitas;
+        const cls   = feito ? `feito ${cfg.cor}` : 'vazio';
+        barraHtml += `<div class="metro-campo ${cls}"
+          data-loja="${l.id}"
+          data-idx="${i}"
+          data-feito="${feito ? '1' : '0'}"
+          data-de="${de}"
+          data-ate="${ate}"
+          onclick="metroToggle(this)"
+          oncontextmenu="return false"></div>`;
       }
 
       const nomeClass = atrasado ? 'metro-nome atrasado' : 'metro-nome';
@@ -1909,46 +1897,28 @@ async function carregarMetro() {
 }
 
 // ══════════════════════════════════════════
-//  LONGPRESS NOS QUADRADINHOS DO METRO
+//  TOQUE SIMPLES NOS QUADRADINHOS DO METRO
 // ══════════════════════════════════════════
-let _mLpTimer = null;
-let _mLpEl    = null;
+async function metroToggle(el) {
+  if (el.dataset.busy === '1') return; // evita clique duplo enquanto salva
+  el.dataset.busy = '1';
 
-function metroPressStart(e, el) {
-  e.preventDefault();
-  metroPressEnd(); // cancela qualquer anterior
-  _mLpEl = el;
-  el.classList.add('pressing');
+  if (navigator.vibrate) navigator.vibrate(40);
 
-  // Vibração contínua durante todo o toque longo (padrão: vibra 1s inteiro)
-  if (navigator.vibrate) navigator.vibrate([1000]);
+  const lojaId = el.dataset.loja;
+  const feito  = el.dataset.feito === '1';
+  const de     = el.dataset.de;
+  const ate    = el.dataset.ate;
 
-  _mLpTimer = setTimeout(async () => {
-    _mLpTimer = null;
-    el.classList.remove('pressing');
-    // Para vibração contínua e dá pulso final de confirmação
-    if (navigator.vibrate) { navigator.vibrate(0); navigator.vibrate([80, 50, 80]); }
-
-    const lojaId = el.dataset.loja;
-    const feito  = el.dataset.feito === '1';
-    const de     = el.dataset.de;
-    const ate    = el.dataset.ate;
-
+  try {
     if (feito) {
       await metroDesmarcar(lojaId, de, ate, el);
     } else {
       await metroMarcar(lojaId, el);
     }
-  }, 1000);
-}
-
-function metroPressEnd(e, el) {
-  if (_mLpTimer) {
-    clearTimeout(_mLpTimer); _mLpTimer = null;
-    // Soltou antes — cancela vibração
-    if (navigator.vibrate) navigator.vibrate(0);
+  } finally {
+    el.dataset.busy = '0';
   }
-  if (_mLpEl) { _mLpEl.classList.remove('pressing'); _mLpEl = null; }
 }
 
 async function metroMarcar(lojaId, el) {
