@@ -35,7 +35,9 @@
       display: flex; align-items: center; gap: 4px;
       position: sticky; top: 0; z-index: 100;
       box-shadow: 0 2px 12px rgba(13,45,79,0.2);
+      overflow-x: auto; -webkit-overflow-scrolling: touch;
     }
+    nav::-webkit-scrollbar { display: none; }
     .logo { font-weight: 700; font-size: 0.95rem; color: var(--green-light); margin-right: auto; white-space: nowrap; }
     .logo em { color: #fff; font-style: normal; font-weight: 400; }
     .logo-total-badge {
@@ -534,6 +536,10 @@
     @media (max-width: 480px) {
       .stat .num { font-size: 1.4rem; }
       nav button span { display: none; }
+      nav { padding: 0 10px; gap: 0; }
+      nav button { padding: 6px 8px; }
+      .logo em { display: none; }
+      .logo-total-badge { padding: 2px 7px; font-size: 0.62rem; }
     }
   </style>
 </head>
@@ -1207,7 +1213,7 @@ async function carregarLojas() {
   renderLista();
 
   const badgeTotal = document.getElementById('logoTotalLojas');
-  if (badgeTotal) badgeTotal.textContent = lojas.length ? `${lojas.length} lojas` : '';
+  if (badgeTotal) badgeTotal.textContent = lojas.length ? `${lojas.length}` : '';
 
   // Se metro ou região estiverem abertos, recarrega também
   const metroAtivo  = document.getElementById('page-metro')?.classList.contains('active');
