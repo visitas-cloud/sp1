@@ -413,8 +413,17 @@
     .msg.err { color: var(--red); }
 
     /* REGIÃO */
-    .regiao-card-title { text-align: center; font-weight: 800; font-size: 1.25rem; color: #111; margin: 22px 0 10px; }
+    .regiao-card-title {
+      text-align: center; font-weight: 800; font-size: 1.25rem; color: #111; margin: 22px 0 10px;
+      display: flex; align-items: center; justify-content: center; gap: 10px; position: relative;
+    }
     .regiao-card-title:first-child { margin-top: 4px; }
+    .regiao-limpar-btn {
+      position: absolute; right: 0; font-size: 0.68rem; font-weight: 700; color: var(--dim);
+      background: var(--surface2); border: 1.5px solid var(--border); border-radius: 20px;
+      padding: 4px 10px; cursor: pointer; white-space: nowrap;
+    }
+    .regiao-limpar-btn:hover { background: #fde8e8; border-color: var(--red); color: var(--red); }
     .regiao-card { border: 2.5px solid #111; border-radius: 12px; padding: 18px 20px; background: #fff; margin-bottom: 6px; }
     .regiao-sub { font-size: 0.72rem; color: var(--dim); margin-bottom: 12px; font-weight: 600; }
     .regiao-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px 18px; }
@@ -2064,14 +2073,13 @@ async function carregarRegioes() {
 
   function montaItem(l) {
     const dica = `${l.nome_loja}${l.ultima_visita ? ' · última visita: ' + new Date(l.ultima_visita).toLocaleDateString('pt-BR') : ' · ainda não visitada'}`;
-    const h = hoje();
+    const marcada = !!l.regiao_marcada;
     return `<div class="regiao-item" title="${dica}">
       <span class="regiao-nome">${l.nome_loja}</span>
       <div class="regiao-item-actions">
-        <span class="regiao-box ${l.visitada_hoje ? 'visitada' : ''}"
-          data-loja="${l.id}" data-feito="${l.visitada_hoje ? '1' : '0'}" data-de="${h}" data-ate="${h}"
-          title="${l.visitada_hoje ? 'Toque para desmarcar a visita de hoje' : 'Toque para marcar visita de hoje'}"
-          onclick="metroToggle(this)"
+        <span class="regiao-box ${marcada ? 'visitada' : ''}"
+          title="${marcada ? 'Toque para desmarcar' : 'Toque para marcar'}"
+          onclick="toggleRegiaoMarcada('${l.id}', this)"
         ></span>
         <button type="button" class="regiao-move-btn" title="Mover para outra região" onclick="abrirModalMover('${l.id}')">⇄</button>
       </div>
@@ -2080,12 +2088,15 @@ async function carregarRegioes() {
 
   function montaBloco(nome, lista, corTitulo) {
     const ordenada = lista.slice().sort((a,b) => (a.nome_loja||'').localeCompare(b.nome_loja||''));
-    const visitadasHoje = ordenada.filter(l => l.visitada_hoje).length;
+    const marcadas = ordenada.filter(l => l.regiao_marcada).length;
     return {
       chave: nome.toLowerCase(),
-      html: `<div class="regiao-card-title"${corTitulo ? ` style="color:${corTitulo}"` : ''}>${nome}</div>
+      html: `<div class="regiao-card-title"${corTitulo ? ` style="color:${corTitulo}"` : ''}>
+          ${nome}
+          <button type="button" class="regiao-limpar-btn" title="Desmarcar todas as lojas deste bloco" onclick="limparBlocoRegiao('${nome.replace(/'/g,"\\'")}')">🧹 Limpar</button>
+        </div>
         <div class="regiao-card"${corTitulo ? ` style="border-color:var(--border)"` : ''}>
-          <div class="regiao-sub">${visitadasHoje}/${ordenada.length} visitadas hoje</div>
+          <div class="regiao-sub">${marcadas}/${ordenada.length} marcadas</div>
           <div class="regiao-grid">${ordenada.map(montaItem).join('')}</div>
         </div>`
     };
@@ -2201,6 +2212,77 @@ async function moverLojaParaRegiao(lojaId, novaRegiao) {
 
 // Cria as regiões automaticamente agrupando lojas próximas (por distância GPS real)
 // e nomeando cada bloco pela rua (logradouro) mais comum dentro do grupo.
+// Marca/desmarca uma loja no bloco de Região — persistente, não depende de visita/GPS
+// e não reseta sozinho no dia seguinte. Só limpa quando o usuário aciona "🧹 Limpar".
+async function toggleRegiaoMarcada(lojaId, el) {
+  const loja = lojas.find(l => l.id === lojaId);
+  if (!loja) return;
+  const novo = !loja.regiao_marcada;
+
+  // Atualização otimista: reflete na hora, sem esperar o banco
+  el.classList.toggle('visitada', novo);
+  el.title = novo ? 'Toque para desmarcar' : 'Toque para marcar';
+  loja.regiao_marcada = novo;
+  const lCache = (window._lojasCache || []).find(x => String(x.id) === String(lojaId));
+  if (lCache) lCache.regiao_marcada = novo;
+
+  const { error } = await sb.from('lojas').update({ regiao_marcada: novo }).eq('id', lojaId);
+  if (error) {
+    // Reverte se não conseguiu salvar
+    el.classList.toggle('visitada', !novo);
+    el.title = !novo ? 'Toque para desmarcar' : 'Toque para marcar';
+    loja.regiao_marcada = !novo;
+    if (lCache) lCache.regiao_marcada = !novo;
+    if (error.message?.toLowerCase().includes('regiao_marcada')) {
+      alert('A coluna "regiao_marcada" ainda não existe na tabela "lojas".\n\nRode este SQL uma vez no Supabase:\n\nalter table lojas add column if not exists regiao_marcada boolean default false;');
+    } else {
+      toast('Erro ao salvar: ' + error.message, 'err');
+    }
+    return;
+  }
+
+  // Atualiza só o contador do bloco, sem re-renderizar tudo (mantém scroll/posição)
+  const card = el.closest('.regiao-card');
+  if (card) {
+    const grid = card.querySelectorAll('.regiao-box.visitada').length;
+    const total = card.querySelectorAll('.regiao-box').length;
+    const sub = card.querySelector('.regiao-sub');
+    if (sub) sub.textContent = `${grid}/${total} marcadas`;
+  }
+}
+
+// Desmarca de uma vez todas as lojas de um bloco de região
+async function limparBlocoRegiao(nomeRegiao) {
+  if (!confirm(`Desmarcar todas as lojas do bloco "${nomeRegiao}"?`)) return;
+
+  const ehSemRegiao = nomeRegiao === 'Sem região definida';
+  const idsDoBloco = lojas
+    .filter(l => ehSemRegiao ? !(l.regiao||'').trim() : (l.regiao||'').trim() === nomeRegiao)
+    .map(l => l.id);
+
+  if (!idsDoBloco.length) { toast('Nenhuma loja nesse bloco', 'err'); return; }
+
+  const { error } = await sb.from('lojas').update({ regiao_marcada: false }).in('id', idsDoBloco);
+  if (error) {
+    if (error.message?.toLowerCase().includes('regiao_marcada')) {
+      alert('A coluna "regiao_marcada" ainda não existe na tabela "lojas".\n\nRode este SQL uma vez no Supabase:\n\nalter table lojas add column if not exists regiao_marcada boolean default false;');
+    } else {
+      toast('Erro ao limpar: ' + error.message, 'err');
+    }
+    return;
+  }
+
+  idsDoBloco.forEach(id => {
+    const l = lojas.find(x => x.id === id);
+    if (l) l.regiao_marcada = false;
+    const lc = (window._lojasCache || []).find(x => String(x.id) === String(id));
+    if (lc) lc.regiao_marcada = false;
+  });
+
+  toast('Bloco limpo ✅', 'ok');
+  await carregarRegioes();
+}
+
 async function autoAgruparRegioes() {
   if (!lojas.length) await carregarLojas();
 
